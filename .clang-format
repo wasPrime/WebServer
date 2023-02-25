@@ -1,0 +1,11 @@
+# Run manually to reformat a file:
+# clang-format -i --style=file <file>
+# find . -iname '*.cc' -o -iname '*.h' -o -iname '*.h.in' | xargs clang-format -i --style=file
+
+Language: Cpp
+BasedOnStyle: Google
+# The offset of Access specifier(public/protected/private)
+AccessModifierOffset: -4
+ColumnLimit: 100
+DerivePointerAlignment: false
+IndentWidth: 4
