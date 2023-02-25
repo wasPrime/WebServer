@@ -21,12 +21,13 @@ set(CXXFLAGS_PROD ${DEFAULT_CXXFLAGS} -O2)
 # add_compile_options(${DEFAULT_CXXFLAGS})
 
 
+file(GLOB UTILS_SRC src/utils/*.cc)
 file(GLOB SERVER_SRC src/server/*.cc)
 file(GLOB CLIENT_SRC src/client/*.cc)
 
 
 set(SERVER_BIN_NAME server)
-add_executable(${SERVER_BIN_NAME} ${SERVER_SRC})
+add_executable(${SERVER_BIN_NAME} ${SERVER_SRC} ${UTILS_SRC})
 target_compile_options(
     ${SERVER_BIN_NAME}
     PRIVATE
@@ -42,7 +43,7 @@ set_target_properties(
 )
 
 set(CLIENT_BIN_NAME client)
-add_executable(${CLIENT_BIN_NAME} ${CLIENT_SRC})
+add_executable(${CLIENT_BIN_NAME} ${CLIENT_SRC} ${UTILS_SRC})
 target_compile_options(
     ${CLIENT_BIN_NAME}
     PRIVATE
