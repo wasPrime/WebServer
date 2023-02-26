@@ -1,5 +1,7 @@
 # Build Folder
 build/
+.vscode/
+.devcontainer/
 
 # Prerequisites
 *.d
