@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Acceptor.h"
 #include "EventLoop.h"
 #include "Socket.h"
 
@@ -13,4 +14,5 @@ public:
 
 private:
     EventLoop* m_loop;
+    std::unique_ptr<Acceptor> m_acceptor;
 };

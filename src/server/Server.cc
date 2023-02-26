@@ -13,17 +13,11 @@
 
 inline constexpr int READ_BUFFER = 1024;
 
-Server::Server(EventLoop* loop) : m_loop(loop) {
-    InetAddress server_addr(LOCAL_HOST, PORT);
-    auto server_socket = new Socket;
-    server_socket->bind(&server_addr);
-    server_socket->listen();
-    server_socket->set_non_blocking();
-
-    auto server_channel = new Channel(loop, server_socket->get_fd());
-    std::function<void()> cb = [this, server_socket] { this->new_connection(server_socket); };
-    server_channel->set_callback(cb);
-    server_channel->enable_reading();
+Server::Server(EventLoop* loop) : m_loop(loop), m_acceptor(std::make_unique<Acceptor>(loop)) {
+    std::function<void(Socket*)> callback = [this](Socket* server_socket) {
+        return this->new_connection(server_socket);
+    };
+    m_acceptor->set_new_connection_callback(callback);
 }
 
 Server::~Server() = default;
