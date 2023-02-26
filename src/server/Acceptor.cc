@@ -2,6 +2,11 @@
 
 #include "utils/util.h"
 
+// TODO:
+// Change the way of formatting due to the incompleteness of `std::format`
+// at clang++ 15.0.6 at present
+// #include <format>
+
 Acceptor::Acceptor(EventLoop* loop) : m_loop(loop), m_server_socket(std::make_unique<Socket>()) {
     InetAddress server_addr(LOCAL_HOST, PORT);
     m_server_socket->bind(&server_addr);
@@ -17,7 +22,20 @@ Acceptor::Acceptor(EventLoop* loop) : m_loop(loop), m_server_socket(std::make_un
 Acceptor::~Acceptor() = default;
 
 void Acceptor::accept_connection() {
-    m_new_connection_callback(m_server_socket.get());
+    InetAddress client_addr;
+    auto client_socket =
+        new Socket(m_server_socket->accept(&client_addr));  // TODO: here is a memory leak!
+    // std::cout << std::format("new client fd {}! IP: {} Port: {}",
+    // client_socket->get_fd(),
+    //                          inet_ntoa(client_addr.m_addr.sin_addr),
+    //                          ntohs(client_addr.m_addr.sin_port))
+    //           << std::endl;
+    printf("new client fd %d! IP: %s Port: %d\n", client_socket->get_fd(),
+           inet_ntoa(client_addr.m_addr.sin_addr), ntohs(client_addr.m_addr.sin_port));
+
+    client_socket->set_non_blocking();
+
+    m_new_connection_callback(client_socket);
 }
 
 void Acceptor::set_new_connection_callback(std::function<void(Socket*)> callback) {

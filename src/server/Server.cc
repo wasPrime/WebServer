@@ -1,72 +1,25 @@
 #include "Server.h"
 
-#include <unistd.h>
-
-#include <cstring>
-
 #include "utils/util.h"
 
-// TODO:
-// Change the way of formatting due to the incompleteness of `std::format`
-// at clang++ 15.0.6 at present
-// #include <format>
-
-inline constexpr int READ_BUFFER = 1024;
-
 Server::Server(EventLoop* loop) : m_loop(loop), m_acceptor(std::make_unique<Acceptor>(loop)) {
-    std::function<void(Socket*)> callback = [this](Socket* server_socket) {
-        return this->new_connection(server_socket);
+    std::function<void(Socket*)> callback = [this](Socket* client_socket) {
+        this->new_connection(client_socket);
     };
     m_acceptor->set_new_connection_callback(callback);
 }
 
 Server::~Server() = default;
 
-void Server::handle_read_event(int sockfd) {
-    std::array<char, READ_BUFFER> buf;
-
-    while (true) {
-        bzero(&buf, sizeof(buf));
-
-        ssize_t read_bytes = read(sockfd, buf.data(), sizeof(buf));
-        if (read_bytes > 0) {
-            printf("message from client fd %d: %s\n", sockfd, buf.data());
-            write(sockfd, buf.data(), sizeof(buf));
-        } else if (read_bytes == -1 &&
-                   errno == EINTR) {  // client interrupts normally and continue to read
-            printf("continue reading");
-            continue;
-        } else if (read_bytes == -1 &&
-                   ((errno == EAGAIN) || (errno == EWOULDBLOCK))) {  // indicate that all data is
-                                                                     // read due to non-block IO
-            printf("finish reading once, errno: %d\n", errno);
-            break;
-        } else if (read_bytes == 0) {  // EOF, client disconnected
-            printf("EOF, client fd %d disconnected\n", sockfd);
-            close(sockfd);  // fd will be removed from the epoll tree when close socket
-            break;
-        }
-    }
+void Server::new_connection(Socket* client_socket) {
+    auto connection = std::make_unique<Connection>(m_loop, client_socket);
+    std::function<void(Socket*)> callback = [this](Socket* client_sock) {
+        this->delete_connection(client_sock);
+    };
+    connection->set_delete_connection_callback(callback);
+    m_connections[client_socket->get_fd()] = std::move(connection);
 }
 
-void Server::new_connection(Socket* server_socket) {
-    InetAddress client_addr;
-    auto client_socket =
-        new Socket(server_socket->accept(&client_addr));  // TODO: here is a memory leak!
-    // std::cout << std::format("new client fd {}! IP: {} Port: {}",
-    // client_socket->get_fd(),
-    //                          inet_ntoa(client_addr.m_addr.sin_addr),
-    //                          ntohs(client_addr.m_addr.sin_port))
-    //           << std::endl;
-    printf("new client fd %d! IP: %s Port: %d\n", client_socket->get_fd(),
-           inet_ntoa(client_addr.m_addr.sin_addr), ntohs(client_addr.m_addr.sin_port));
-
-    client_socket->set_non_blocking();
-
-    auto client_channel = new Channel(m_loop, client_socket->get_fd());
-    std::function<void()> cb = [this, client_channel] {
-        this->handle_read_event(client_channel->get_fd());
-    };
-    client_channel->set_callback(cb);
-    client_channel->enable_reading();
+void Server::delete_connection(Socket* client_socket) {
+    m_connections.erase(client_socket->get_fd());
 }
