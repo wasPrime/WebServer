@@ -9,3 +9,4 @@ AccessModifierOffset: -4
 ColumnLimit: 100
 DerivePointerAlignment: false
 IndentWidth: 4
+AllowShortFunctionsOnASingleLine: false

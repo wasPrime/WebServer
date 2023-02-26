@@ -11,7 +11,7 @@
 int main() {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    struct sockaddr_in server_address;
+    sockaddr_in server_address;
     bzero(&server_address, sizeof(server_address));
 
     server_address.sin_family = AF_INET;
