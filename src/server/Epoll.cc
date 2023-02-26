@@ -32,8 +32,33 @@ void Epoll::add_fd(int fd, uint32_t op) {
     errif(epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, fd, &ev) == -1, "epoll add event error");
 }
 
-std::vector<epoll_event> Epoll::poll(int timeout) {
+void Epoll::update_channel(Channel* channel) {
+    epoll_event ev;
+    bzero(&ev, sizeof(ev));
+    ev.data.ptr = channel;
+    ev.events = channel->get_events();
+
+    int fd = channel->get_fd();
+    if (!channel->get_in_epoll()) {
+        errif(epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, fd, &ev) == -1, "epoll add error");
+        channel->set_in_epoll();
+        // debug("Epoll: add Channel to epoll tree success, the Channel's fd is: ", fd);
+    } else {
+        errif(epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, fd, &ev) == -1, "epoll modify error");
+        // debug("Epoll: modify Channel in epoll tree success, the Channel's fd is: ", fd);
+    }
+}
+
+std::vector<Channel*> Epoll::poll(int timeout) {
+    std::vector<Channel*> active_channels;
     int nfds = epoll_wait(m_epoll_fd, m_events.data(), MAX_EVENTS, timeout);
     errif(nfds == -1, "epoll wait error");
-    return std::vector<epoll_event>(m_events.begin(), m_events.begin() + nfds);
+
+    for (int i = 0; i < nfds; ++i) {
+        Channel* ch = static_cast<Channel*>(m_events[i].data.ptr);
+        ch->set_revents(m_events[i].events);
+        active_channels.push_back(ch);
+    }
+
+    return active_channels;
 }

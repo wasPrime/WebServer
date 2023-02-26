@@ -29,12 +29,14 @@ int main() {
     server_socket.set_non_blocking();
 
     Epoll epoll;
-    epoll.add_fd(server_socket.get_fd(), EPOLLIN | EPOLLET);
+
+    auto server_channel = new Channel(&epoll, server_socket.get_fd());
+    server_channel->enable_reading();
 
     while (true) {
-        std::vector<epoll_event> events = epoll.poll();
-        for (const epoll_event& event : events) {
-            if (event.data.fd == server_socket.get_fd()) {
+        std::vector<Channel*> active_channels = epoll.poll();
+        for (Channel* active_channel : active_channels) {
+            if (active_channel->get_fd() == server_socket.get_fd()) {
                 InetAddress client_addr;
                 auto client_socket =
                     new Socket(server_socket.accept(&client_addr));  // TODO: here is a memory leak!
@@ -47,10 +49,12 @@ int main() {
                        inet_ntoa(client_addr.m_addr.sin_addr), ntohs(client_addr.m_addr.sin_port));
 
                 client_socket->set_non_blocking();
-                epoll.add_fd(client_socket->get_fd(), EPOLLIN | EPOLLET);
 
-            } else if (event.events & EPOLLIN) {
-                handle_read_event(event.data.fd);
+                auto client_channel = new Channel(&epoll, client_socket->get_fd());
+                client_channel->enable_reading();
+
+            } else if (active_channel->get_revents() & EPOLLIN) {
+                handle_read_event(active_channel->get_fd());
             } else {  // other eventss
                 printf("something else happened\n");
             }

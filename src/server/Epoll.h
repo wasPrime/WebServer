@@ -5,13 +5,17 @@
 #include <cstdint>
 #include <vector>
 
+#include "Channel.h"
+
+class Channel;
 class Epoll {
 public:
     Epoll();
     ~Epoll();
 
     void add_fd(int fd, uint32_t op);
-    std::vector<epoll_event> poll(int timeout = -1);
+    void update_channel(Channel* channel);
+    std::vector<Channel*> poll(int timeout = -1);
 
 private:
     int m_epoll_fd;
