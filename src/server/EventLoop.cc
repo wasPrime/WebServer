@@ -1,6 +1,9 @@
 #include "EventLoop.h"
 
-EventLoop::EventLoop() : m_epoll(std::make_unique<Epoll>()), m_quit(false) {
+EventLoop::EventLoop()
+    : m_epoll(std::make_unique<Epoll>()),
+      m_thread_pool(std::make_unique<ThreadPool>()),
+      m_quit(false) {
 }
 
 EventLoop::~EventLoop() = default;
@@ -16,4 +19,8 @@ void EventLoop::loop() {
 
 void EventLoop::update_channel(Channel* channel) {
     m_epoll->update_channel(channel);
+}
+
+void EventLoop::add_thread(std::function<void()> func) {
+    m_thread_pool->add(func);
 }

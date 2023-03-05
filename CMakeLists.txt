@@ -35,6 +35,7 @@ target_compile_options(
     PRIVATE
     ${CXXFLAGS_PROD}
 )
+target_link_libraries(${SERVER_BIN_NAME} pthread)
 set_target_properties(
     ${SERVER_BIN_NAME}
     PROPERTIES

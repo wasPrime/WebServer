@@ -40,5 +40,5 @@ void Channel::set_callback(std::function<void()> callback) {
 }
 
 void Channel::handle_event() {
-    m_callback();
+    m_loop->add_thread(m_callback);
 }
