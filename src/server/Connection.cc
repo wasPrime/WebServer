@@ -52,12 +52,16 @@ void Connection::echo(int sockfd) {
         } else if (read_bytes == 0) {  // EOF, client disconnected
             printf("EOF, client fd %d disconnected\n", sockfd);
             // close(sockfd);  // fd will be removed from the epoll tree when close socket
-            m_delete_connection_callback(m_client_socket);
+            m_delete_connection_callback(sockfd);
+            break;
+        } else {
+            printf("Connection reset by peer\n");
+            m_delete_connection_callback(sockfd);
             break;
         }
     }
 }
 
-void Connection::set_delete_connection_callback(std::function<void(Socket*)> callback) {
+void Connection::set_delete_connection_callback(std::function<void(int)> callback) {
     m_delete_connection_callback = callback;
 }

@@ -51,19 +51,11 @@ void Channel::set_read_callback(std::function<void()> read_callback) {
 
 void Channel::handle_event() {
     if (m_ready_events & (EPOLLIN | EPOLLPRI)) {
-        if (m_use_thread_pool) {
-            m_loop->add_thread(m_read_callback);
-        } else {
-            m_read_callback();
-        }
+        m_read_callback();
     }
 
     if (m_ready_events & EPOLLOUT) {
-        if (m_use_thread_pool) {
-            m_loop->add_thread(m_write_callback);
-        } else {
-            m_write_callback();
-        }
+        m_write_callback();
     }
 }
 
