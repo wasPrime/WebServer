@@ -2,6 +2,7 @@
 
 #include <condition_variable>
 #include <functional>
+#include <future>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -12,7 +13,9 @@ public:
     ThreadPool(int size = 10);
     ~ThreadPool();
 
-    void add(std::function<void()> func);
+    template <typename Callable, typename... Args>
+    auto add(Callable&& f, Args&&... args)
+        -> std::future<typename std::result_of<Callable(Args...)>::type>;
 
 private:
     std::vector<std::thread> m_threads;
@@ -21,3 +24,5 @@ private:
     std::condition_variable m_cv;
     bool m_stop;
 };
+
+#include "ThreadPool.hpp"
