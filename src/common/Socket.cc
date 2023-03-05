@@ -42,6 +42,11 @@ int Socket::accept(InetAddress* addr) {
     return client_sockfd;
 }
 
+void Socket::connect(InetAddress* addr) {
+    errif(::connect(m_fd, reinterpret_cast<const sockaddr*>(&addr->m_addr), addr->m_addr_len) == -1,
+          "socket connect error");
+}
+
 int Socket::get_fd() {
     return m_fd;
 }

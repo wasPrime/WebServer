@@ -3,7 +3,8 @@
 #include <functional>
 
 #include "EventLoop.h"
-#include "Socket.h"
+#include "common/Buffer.h"
+#include "common/Socket.h"
 
 class Connection {
 public:
@@ -18,4 +19,6 @@ private:
     Socket* m_client_socket;
     std::unique_ptr<Channel> m_channel;
     std::function<void(Socket*)> m_delete_connection_callback;
+
+    std::unique_ptr<Buffer> m_read_buffer;
 };

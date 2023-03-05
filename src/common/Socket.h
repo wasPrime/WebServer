@@ -13,6 +13,7 @@ public:
     void set_non_blocking();
 
     int accept(InetAddress* addr);
+    void connect(InetAddress* addr);
 
     int get_fd();
 
