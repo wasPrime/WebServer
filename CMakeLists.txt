@@ -27,9 +27,11 @@ file(GLOB UTILS_SRC src/utils/*.cc)
 file(GLOB SERVER_SRC src/server/*.cc)
 file(GLOB CLIENT_SRC src/client/*.cc)
 
+file(GLOB SERVER_MAIN_SRC src/main.cc)
+
 
 set(SERVER_BIN_NAME server)
-add_executable(${SERVER_BIN_NAME} ${SERVER_SRC} ${COMMON_SRC} ${UTILS_SRC})
+add_executable(${SERVER_BIN_NAME} ${SERVER_MAIN_SRC} ${SERVER_SRC} ${COMMON_SRC} ${UTILS_SRC})
 target_compile_options(
     ${SERVER_BIN_NAME}
     PRIVATE
@@ -52,6 +54,7 @@ target_compile_options(
     PRIVATE
     ${CXXFLAGS_PROD}
 )
+target_link_libraries(${CLIENT_BIN_NAME} pthread)
 set_target_properties(
     ${CLIENT_BIN_NAME}
     PROPERTIES
@@ -61,3 +64,20 @@ set_target_properties(
     PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
+set(THREAD_POOL_TEST_BIN_NAME thread_pool_test)
+file(GLOB THREAD_POOL_SRC tests/ThreadPoolTest.cc)
+add_executable(${THREAD_POOL_TEST_BIN_NAME} ${THREAD_POOL_SRC} ${SERVER_SRC} ${COMMON_SRC} ${UTILS_SRC})
+target_compile_options(
+    ${THREAD_POOL_TEST_BIN_NAME}
+    PRIVATE
+    ${CXXFLAGS_PROD}
+)
+target_link_libraries(${THREAD_POOL_TEST_BIN_NAME} pthread)
+set_target_properties(
+    ${THREAD_POOL_TEST_BIN_NAME}
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
+    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
+)
