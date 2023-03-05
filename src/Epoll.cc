@@ -5,7 +5,7 @@
 #include <cstring>
 #include <ranges>
 
-#include "utils/util.h"
+#include "util.h"
 
 inline constexpr int MAX_EVENTS = 1000;
 

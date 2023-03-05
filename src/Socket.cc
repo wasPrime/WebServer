@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "utils/util.h"
+#include "util.h"
 
 Socket::Socket() {
     m_fd = socket(AF_INET, SOCK_STREAM, 0);

@@ -1,5 +1,6 @@
-#include "server/EventLoop.h"
-#include "server/Server.h"
+#include "Server.h"
+
+#include "EventLoop.h"
 
 int main() {
     EventLoop loop;

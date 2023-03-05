@@ -10,9 +10,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-project(WebServer VERSION 1.0)
+project(WebServer
+        VERSION 0.1
+        DESCRIPTION "WebServer"
+        LANGUAGES CXX
+        )
 
-include_directories("src")
+include_directories("src/include")
 
 set(BASIC_CXXFLAGS -g -pipe -fPIC -Wall -Wextra -Werror -pedantic-errors -pthread)
 set(EXTRA_WARNINGS -Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virtual -Wsign-promo -Wswitch-default -Wfloat-equal -Wshadow -Wcast-qual -Wextra-semi)
@@ -20,18 +24,15 @@ set(DEFAULT_CXXFLAGS ${BASIC_CXXFLAGS} ${EXTRA_WARNINGS})
 set(CXXFLAGS_PROD ${DEFAULT_CXXFLAGS} -O2)
 # add_compile_options(${DEFAULT_CXXFLAGS})
 
+file(GLOB resources src/*.cc)
 
-file(GLOB COMMON_SRC src/common/*.cc)
-file(GLOB UTILS_SRC src/utils/*.cc)
-
-file(GLOB SERVER_SRC src/server/*.cc)
-file(GLOB CLIENT_SRC src/client/*.cc)
-
-file(GLOB SERVER_MAIN_SRC src/main.cc)
+file(GLOB server_src test/server.cc)
+file(GLOB client_src test/client.cc)
+file(GLOB thread_pool_src test/ThreadPoolTest.cc)
 
 
 set(SERVER_BIN_NAME server)
-add_executable(${SERVER_BIN_NAME} ${SERVER_MAIN_SRC} ${SERVER_SRC} ${COMMON_SRC} ${UTILS_SRC})
+add_executable(${SERVER_BIN_NAME} ${server_src} ${resources})
 target_compile_options(
     ${SERVER_BIN_NAME}
     PRIVATE
@@ -48,7 +49,7 @@ set_target_properties(
 )
 
 set(CLIENT_BIN_NAME client)
-add_executable(${CLIENT_BIN_NAME} ${CLIENT_SRC} ${COMMON_SRC} ${UTILS_SRC})
+add_executable(${CLIENT_BIN_NAME} ${client_src} ${resources})
 target_compile_options(
     ${CLIENT_BIN_NAME}
     PRIVATE
@@ -65,8 +66,7 @@ set_target_properties(
 )
 
 set(THREAD_POOL_TEST_BIN_NAME thread_pool_test)
-file(GLOB THREAD_POOL_SRC tests/ThreadPoolTest.cc)
-add_executable(${THREAD_POOL_TEST_BIN_NAME} ${THREAD_POOL_SRC} ${SERVER_SRC} ${COMMON_SRC} ${UTILS_SRC})
+add_executable(${THREAD_POOL_TEST_BIN_NAME} ${thread_pool_src} ${resources})
 target_compile_options(
     ${THREAD_POOL_TEST_BIN_NAME}
     PRIVATE

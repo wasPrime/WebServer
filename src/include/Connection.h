@@ -2,9 +2,9 @@
 
 #include <functional>
 
+#include "Buffer.h"
 #include "EventLoop.h"
-#include "common/Buffer.h"
-#include "common/Socket.h"
+#include "Socket.h"
 
 class Connection {
 public:

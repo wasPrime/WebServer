@@ -3,9 +3,9 @@
 #include <array>
 #include <cstring>
 
-#include "common/Buffer.h"
-#include "common/Socket.h"
-#include "utils/util.h"
+#include "Buffer.h"
+#include "Socket.h"
+#include "util.h"
 
 int main() {
     InetAddress server_addr(LOCAL_HOST, PORT);

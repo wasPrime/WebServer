@@ -4,7 +4,7 @@
 
 #include <cstring>
 
-#include "utils/util.h"
+#include "util.h"
 
 inline constexpr int READ_BUFFER = 1024;
 
