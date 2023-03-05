@@ -11,12 +11,15 @@ Acceptor::Acceptor(EventLoop* loop) : m_loop(loop), m_server_socket(std::make_un
     InetAddress server_addr(LOCAL_HOST, PORT);
     m_server_socket->bind(&server_addr);
     m_server_socket->listen();
-    m_server_socket->set_non_blocking();
+
+    // Set Acceptor as blocking
+    // m_server_socket->set_non_blocking();
 
     m_accept_channel = std::make_unique<Channel>(loop, m_server_socket->get_fd());
     std::function<void()> cb = [this] { this->accept_connection(); };
-    m_accept_channel->set_callback(cb);
+    m_accept_channel->set_read_callback(cb);
     m_accept_channel->enable_reading();
+    m_accept_channel->set_use_thread_pool(false);
 }
 
 Acceptor::~Acceptor() = default;

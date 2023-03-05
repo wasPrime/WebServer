@@ -56,7 +56,7 @@ std::vector<Channel*> Epoll::poll(int timeout) {
 
     for (auto&& event : std::views::take(m_events, nfds)) {
         Channel* ch = static_cast<Channel*>(event.data.ptr);
-        ch->set_revents(event.events);
+        ch->set_ready_events(event.events);
         active_channels.push_back(ch);
     }
 

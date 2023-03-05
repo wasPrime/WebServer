@@ -14,8 +14,10 @@ Connection::Connection(EventLoop* loop, Socket* client_socket)
       m_channel(std::make_unique<Channel>(loop, client_socket->get_fd())),
       m_read_buffer(std::make_unique<Buffer>()) {
     std::function<void()> callback = [this] { this->echo(this->m_client_socket->get_fd()); };
-    m_channel->set_callback(callback);
+    m_channel->set_read_callback(callback);
     m_channel->enable_reading();
+    m_channel->use_ET();
+    m_channel->set_use_thread_pool(true);
 }
 
 Connection::~Connection() {
