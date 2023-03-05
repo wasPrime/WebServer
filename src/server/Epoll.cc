@@ -54,9 +54,9 @@ std::vector<Channel*> Epoll::poll(int timeout) {
     int nfds = epoll_wait(m_epoll_fd, m_events.data(), MAX_EVENTS, timeout);
     errif(nfds == -1, "epoll wait error");
 
-    for (int i = 0; i < nfds; ++i) {
-        Channel* ch = static_cast<Channel*>(m_events[i].data.ptr);
-        ch->set_revents(m_events[i].events);
+    for (auto&& event : std::views::take(m_events, nfds)) {
+        Channel* ch = static_cast<Channel*>(event.data.ptr);
+        ch->set_revents(event.events);
         active_channels.push_back(ch);
     }
 
