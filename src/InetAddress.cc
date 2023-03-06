@@ -3,11 +3,11 @@
 
 #include <cstring>
 
-InetAddress::InetAddress() : m_addr_len(sizeof(m_addr)) {
+InetAddress::InetAddress() {
     bzero(&m_addr, sizeof(m_addr));
 }
 
-InetAddress::InetAddress(const char* ip, uint16_t port) : m_addr_len(sizeof(m_addr)) {
+InetAddress::InetAddress(const char* ip, uint16_t port) {
     bzero(&m_addr, sizeof(m_addr));
 
     m_addr.sin_family = AF_INET;
@@ -16,3 +16,19 @@ InetAddress::InetAddress(const char* ip, uint16_t port) : m_addr_len(sizeof(m_ad
 }
 
 InetAddress::~InetAddress() = default;
+
+void InetAddress::set_addr(const sockaddr_in& addr) {
+    m_addr = addr;
+}
+
+const sockaddr_in& InetAddress::get_addr() const {
+    return m_addr;
+}
+
+const char* InetAddress::get_ip() const {
+    return inet_ntoa(m_addr.sin_addr);
+}
+
+uint16_t InetAddress::get_port() const {
+    return ntohs(m_addr.sin_port);
+}

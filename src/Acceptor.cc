@@ -19,7 +19,6 @@ Acceptor::Acceptor(EventLoop* loop) : m_loop(loop), m_server_socket(std::make_un
     std::function<void()> cb = [this] { this->accept_connection(); };
     m_accept_channel->set_read_callback(cb);
     m_accept_channel->enable_reading();
-    m_accept_channel->set_use_thread_pool(false);
 }
 
 Acceptor::~Acceptor() = default;
@@ -30,11 +29,11 @@ void Acceptor::accept_connection() {
         new Socket(m_server_socket->accept(&client_addr));  // TODO: here is a memory leak!
     // std::cout << std::format("new client fd {}! IP: {} Port: {}",
     // client_socket->get_fd(),
-    //                          inet_ntoa(client_addr.m_addr.sin_addr),
-    //                          ntohs(client_addr.m_addr.sin_port))
+    //                          inet_ntoa(client_addr.get_addr().sin_addr),
+    //                          ntohs(client_addr.get_addr().sin_port))
     //           << std::endl;
     printf("new client fd %d! IP: %s Port: %d\n", client_socket->get_fd(),
-           inet_ntoa(client_addr.m_addr.sin_addr), ntohs(client_addr.m_addr.sin_port));
+           inet_ntoa(client_addr.get_addr().sin_addr), ntohs(client_addr.get_addr().sin_port));
 
     client_socket->set_non_blocking();
 

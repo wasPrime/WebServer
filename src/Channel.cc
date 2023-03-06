@@ -1,12 +1,7 @@
 #include "Channel.h"
 
 Channel::Channel(EventLoop* loop, int fd)
-    : m_loop(loop),
-      m_fd(fd),
-      m_events(0),
-      m_ready_events(0),
-      m_in_epoll(false),
-      m_use_thread_pool(true) {
+    : m_loop(loop), m_fd(fd), m_events(0), m_ready_events(0), m_in_epoll(false) {
 }
 
 Channel::~Channel() = default;
@@ -57,8 +52,4 @@ void Channel::handle_event() {
     if (m_ready_events & EPOLLOUT) {
         m_write_callback();
     }
-}
-
-void Channel::set_use_thread_pool(bool use) {
-    m_use_thread_pool = use;
 }
