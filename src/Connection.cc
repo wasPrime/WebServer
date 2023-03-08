@@ -9,10 +9,10 @@
 
 inline constexpr int READ_BUFFER = 1024;
 
-Connection::Connection(EventLoop* loop, Socket* client_socket)
+Connection::Connection(EventLoop* loop, Socket* socket)
     : m_loop(loop),
-      m_socket(client_socket),
-      m_channel(std::make_unique<Channel>(loop, client_socket->get_fd())),
+      m_socket(socket),
+      m_channel(std::make_unique<Channel>(loop, socket->get_fd())),
       m_state(State::Connected),
       m_read_buffer(std::make_unique<Buffer>()),
       m_send_buffer(std::make_unique<Buffer>()) {
@@ -158,6 +158,10 @@ const char* Connection::get_send_buffer() const {
 
 void Connection::set_send_buffer(const char* str) {
     m_send_buffer->set_buf(str);
+}
+
+void Connection::getline_send_buffer() {
+    m_send_buffer->getline();
 }
 
 Connection::State Connection::get_state() const {

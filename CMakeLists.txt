@@ -1,6 +1,6 @@
 # CMake configuration file of parser project
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 # set language std
 set(CMAKE_CXX_STANDARD 20)
@@ -18,66 +18,28 @@ project(WebServer
 
 include_directories("src/include")
 
-set(BASIC_CXXFLAGS -g -pipe -fPIC -Wall -Wextra -Werror -pedantic-errors -pthread)
-set(EXTRA_WARNINGS -Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virtual -Wsign-promo -Wswitch-default -Wfloat-equal -Wshadow -Wcast-qual -Wextra-semi)
-set(DEFAULT_CXXFLAGS ${BASIC_CXXFLAGS} ${EXTRA_WARNINGS})
-set(CXXFLAGS_PROD ${DEFAULT_CXXFLAGS} -O2)
+set(BASIC_CXXFLAGS "-O2 -g -pipe -fPIC -Wall -Wextra -Werror -pedantic-errors -pthread")
+set(EXTRA_WARNINGS "-Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virtual -Wsign-promo -Wswitch-default -Wfloat-equal -Wshadow -Wcast-qual -Wextra-semi -Wno-unused-parameter -Wno-attributes")
+# set(DEFAULT_CXXFLAGS ${BASIC_CXXFLAGS} ${EXTRA_WARNINGS})
 # add_compile_options(${DEFAULT_CXXFLAGS})
 
-file(GLOB resources src/*.cc)
+# Compiler flags.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BASIC_CXXFLAGS} ${EXTRA_WARNINGS}")
+# cmake -DCMAKE_BUILD_TYPE=DEBUG ..
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fPIC")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fPIC")
+set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -fPIC")
 
-file(GLOB server_src test/server.cc)
-file(GLOB client_src test/client.cc)
-file(GLOB thread_pool_src test/ThreadPoolTest.cc)
+set(GCC_COVERAGE_LINK_FLAGS "-fPIC")
+message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+message(STATUS "CMAKE_CXX_FLAGS_DEBUG: ${CMAKE_CXX_FLAGS_DEBUG}")
+message(STATUS "CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
+message(STATUS "CMAKE_SHARED_LINKER_FLAGS: ${CMAKE_SHARED_LINKER_FLAGS}")
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-set(SERVER_BIN_NAME server)
-add_executable(${SERVER_BIN_NAME} ${server_src} ${resources})
-target_compile_options(
-    ${SERVER_BIN_NAME}
-    PRIVATE
-    ${CXXFLAGS_PROD}
-)
-target_link_libraries(${SERVER_BIN_NAME} pthread)
-set_target_properties(
-    ${SERVER_BIN_NAME}
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
-
-set(CLIENT_BIN_NAME client)
-add_executable(${CLIENT_BIN_NAME} ${client_src} ${resources})
-target_compile_options(
-    ${CLIENT_BIN_NAME}
-    PRIVATE
-    ${CXXFLAGS_PROD}
-)
-target_link_libraries(${CLIENT_BIN_NAME} pthread)
-set_target_properties(
-    ${CLIENT_BIN_NAME}
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
-
-set(THREAD_POOL_TEST_BIN_NAME thread_pool_test)
-add_executable(${THREAD_POOL_TEST_BIN_NAME} ${thread_pool_src} ${resources})
-target_compile_options(
-    ${THREAD_POOL_TEST_BIN_NAME}
-    PRIVATE
-    ${CXXFLAGS_PROD}
-)
-target_link_libraries(${THREAD_POOL_TEST_BIN_NAME} pthread)
-set_target_properties(
-    ${THREAD_POOL_TEST_BIN_NAME}
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
-    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
-)
+add_subdirectory(src)
+add_subdirectory(test)

@@ -16,7 +16,7 @@ public:
         Failed,
     };
 
-    Connection(EventLoop* loop, Socket* client_socket);
+    Connection(EventLoop* loop, Socket* socket);
     ~Connection();
 
     void set_delete_connection_callback(std::function<void(Socket*)> callback);
@@ -30,6 +30,7 @@ public:
 
     const char* get_send_buffer() const;
     void set_send_buffer(const char* str);
+    void getline_send_buffer();
 
     State get_state() const;
     Socket* get_socket() const;
