@@ -12,20 +12,18 @@ inline constexpr int READ_BUFFER = 1024;
 Connection::Connection(EventLoop* loop, Socket* socket)
     : m_loop(loop),
       m_socket(socket),
-      m_channel(std::make_unique<Channel>(loop, socket->get_fd())),
       m_state(State::Connected),
       m_read_buffer(std::make_unique<Buffer>()),
       m_send_buffer(std::make_unique<Buffer>()) {
     if (m_loop != nullptr) {
-        m_channel->enable_reading();
+        m_channel = std::make_unique<Channel>(loop, socket->get_fd());
+        m_channel->enable_read();
         m_channel->use_ET();
     }
 }
 
 Connection::~Connection() {
-    if (m_loop != nullptr) {
-        delete m_socket;
-    }
+    delete m_socket;
 }
 
 void Connection::set_delete_connection_callback(std::function<void(Socket*)> callback) {

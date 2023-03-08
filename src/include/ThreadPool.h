@@ -8,10 +8,14 @@
 #include <thread>
 #include <vector>
 
+#include "macros.h"
+
 class ThreadPool {
 public:
     ThreadPool(int size = 10);
     ~ThreadPool();
+
+    DISALLOW_COPY_AND_MOVE(ThreadPool);
 
     template <typename Callable, typename... Args>
     auto add(Callable&& f, Args&&... args)

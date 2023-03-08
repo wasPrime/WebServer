@@ -1,18 +1,25 @@
 #include "Channel.h"
 
 Channel::Channel(EventLoop* loop, int fd)
-    : m_loop(loop), m_fd(fd), m_events(0), m_ready_events(0), m_in_epoll(false) {
+    : m_loop(loop), m_fd(fd), m_listen_events(0), m_ready_events(0), m_exist(false) {
 }
 
-Channel::~Channel() = default;
+Channel::~Channel() {
+    m_loop->delete_channel(this);
+}
 
 void Channel::use_ET() {
-    m_events |= EPOLLET;
+    m_listen_events |= ET;
     m_loop->update_channel(this);
 }
 
-void Channel::enable_reading() {
-    m_events |= EPOLLIN | EPOLLPRI;
+void Channel::enable_read() {
+    m_listen_events |= READ_EVENT;
+    m_loop->update_channel(this);
+}
+
+void Channel::enable_write() {
+    m_listen_events |= WRITE_EVENT;
     m_loop->update_channel(this);
 }
 
@@ -20,36 +27,50 @@ int Channel::get_fd() {
     return m_fd;
 }
 
-uint32_t Channel::get_events() {
-    return m_events;
+int Channel::get_listen_events() const {
+    return m_listen_events;
 }
 
-bool Channel::get_in_epoll() {
-    return m_in_epoll;
+bool Channel::get_exist() const {
+    return m_exist;
 }
 
-void Channel::set_in_epoll() {
-    m_in_epoll = true;
+void Channel::set_exist(bool exist) {
+    m_exist = exist;
 }
 
-uint32_t Channel::get_ready_events() {
+int Channel::get_ready_events() const {
     return m_ready_events;
 }
 
-void Channel::set_ready_events(uint32_t ready_events) {
-    m_ready_events = ready_events;
+void Channel::set_ready_events(int events) {
+    if (events & READ_EVENT) {
+        m_ready_events |= READ_EVENT;
+    }
+
+    if (events & WRITE_EVENT) {
+        m_ready_events |= WRITE_EVENT;
+    }
+
+    if (events & ET) {
+        m_ready_events |= ET;
+    }
 }
 
 void Channel::set_read_callback(std::function<void()> read_callback) {
     m_read_callback = read_callback;
 }
 
+void Channel::set_write_callback(std::function<void()> write_callback) {
+    m_write_callback = write_callback;
+}
+
 void Channel::handle_event() {
-    if (m_ready_events & (EPOLLIN | EPOLLPRI)) {
+    if (m_ready_events & READ_EVENT) {
         m_read_callback();
     }
 
-    if (m_ready_events & EPOLLOUT) {
+    if (m_ready_events & WRITE_EVENT) {
         m_write_callback();
     }
 }

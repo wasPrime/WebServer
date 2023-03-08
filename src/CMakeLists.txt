@@ -1,4 +1,3 @@
 file(GLOB resources *.cc)
-set(SERVER_SHARED_NAME server_shared)
-add_library(${SERVER_SHARED_NAME} SHARED ${resources})
-
+set(server_shared_name server_shared)
+add_library(${server_shared_name} SHARED ${resources})

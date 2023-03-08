@@ -5,6 +5,7 @@
 #include "Buffer.h"
 #include "EventLoop.h"
 #include "Socket.h"
+#include "macros.h"
 
 class Connection {
 public:
@@ -18,6 +19,8 @@ public:
 
     Connection(EventLoop* loop, Socket* socket);
     ~Connection();
+
+    DISALLOW_COPY_AND_MOVE(Connection);
 
     void set_delete_connection_callback(std::function<void(Socket*)> callback);
     void set_on_connect_callback(const std::function<void(Connection*)>& callback);

@@ -18,6 +18,15 @@ project(WebServer
 
 include_directories("src/include")
 
+# OS
+if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    message(STATUS "Platform: macOS")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_MACOS")
+elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    message(STATUS "Platform: Linux")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_LINUX")
+endif()
+
 set(BASIC_CXXFLAGS "-O2 -g -pipe -fPIC -Wall -Wextra -Werror -pedantic-errors -pthread")
 set(EXTRA_WARNINGS "-Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virtual -Wsign-promo -Wswitch-default -Wfloat-equal -Wshadow -Wcast-qual -Wextra-semi -Wno-unused-parameter -Wno-attributes")
 # set(DEFAULT_CXXFLAGS ${BASIC_CXXFLAGS} ${EXTRA_WARNINGS})

@@ -1,12 +1,15 @@
 #pragma once
 
 #include "InetAddress.h"
+#include "macros.h"
 
 class Socket {
 public:
     Socket();
     Socket(int fd);
     ~Socket();
+
+    DISALLOW_COPY_AND_MOVE(Socket);
 
     void bind(InetAddress* addr) const;
     void listen() const;

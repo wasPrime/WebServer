@@ -7,11 +7,14 @@
 #include "EventLoop.h"
 #include "Socket.h"
 #include "ThreadPool.h"
+#include "macros.h"
 
 class Server {
 public:
     Server(EventLoop* loop);
     ~Server();
+
+    DISALLOW_COPY_AND_MOVE(Server);
 
     void new_connection(Socket* client_socket);
     void delete_connection(Socket* client_socket);

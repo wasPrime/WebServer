@@ -9,7 +9,7 @@ foreach(test_source ${test_resources})
 
     string(REPLACE ".cc" "" test_name ${test_filename})
     message(STATUS "test name ${test_name}")
-
+    
     add_executable(${test_name} ${test_source})
     target_link_libraries(${test_name} server_shared pthread)
 endforeach(test_source ${test_resources})

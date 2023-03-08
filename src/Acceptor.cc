@@ -18,7 +18,7 @@ Acceptor::Acceptor(EventLoop* loop) : m_loop(loop), m_server_socket(std::make_un
     m_accept_channel = std::make_unique<Channel>(loop, m_server_socket->get_fd());
     std::function<void()> cb = [this] { this->accept_connection(); };
     m_accept_channel->set_read_callback(cb);
-    m_accept_channel->enable_reading();
+    m_accept_channel->enable_read();
 }
 
 Acceptor::~Acceptor() = default;
