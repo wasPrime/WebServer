@@ -2,6 +2,7 @@
 
 #include <ranges>
 
+#include "Exception.h"
 #include "util.h"
 
 Server::Server(EventLoop* loop)
@@ -32,7 +33,8 @@ Server::~Server() = default;
 
 void Server::new_connection(Socket* client_socket) {
     if (client_socket->get_fd() == -1) {
-        return;
+        throw Exception(ExceptionType::INVALID_SOCKET,
+                        "New Connection error, invalid client socket!");
     }
 
     auto random = client_socket->get_fd() % m_sub_reactors.size();
@@ -41,7 +43,12 @@ void Server::new_connection(Socket* client_socket) {
         this->delete_connection(client_sock);
     };
     connection->set_delete_connection_callback(callback);
-    connection->set_on_connect_callback(m_on_connect_callback);
+    connection->set_on_message_callback(m_on_message_callback);
+
+    if (m_new_connect_callback) {
+        m_new_connect_callback(connection.get());
+    }
+
     m_connections[client_socket->get_fd()] = std::move(connection);
 }
 
@@ -49,6 +56,10 @@ void Server::delete_connection(Socket* client_socket) {
     m_connections.erase(client_socket->get_fd());
 }
 
-void Server::on_connect(std::function<void(Connection*)> callback) {
-    m_on_connect_callback = callback;
+void Server::new_connect(std::function<void(Connection*)> callback) {
+    m_new_connect_callback = std::move(callback);
+}
+
+void Server::on_message(std::function<void(Connection*)> callback) {
+    m_on_message_callback = std::move(callback);
 }

@@ -30,9 +30,14 @@ void Connection::set_delete_connection_callback(std::function<void(Socket*)> cal
     m_delete_connection_callback = callback;
 }
 
-void Connection::set_on_connect_callback(const std::function<void(Connection*)>& callback) {
-    m_on_connect_callback = callback;
-    m_channel->set_read_callback([this] { this->m_on_connect_callback(this); });
+void Connection::set_on_message_callback(const std::function<void(Connection*)>& callback) {
+    m_on_message_callback = callback;
+    m_channel->set_read_callback([this] { this->business(); });
+}
+
+void Connection::business() {
+    read();
+    m_on_message_callback(this);
 }
 
 void Connection::read() {
@@ -105,6 +110,11 @@ void Connection::write() {
     }
 
     m_send_buffer->clear();
+}
+
+void Connection::send(const char* msg) {
+    set_send_buffer(msg);
+    write();
 }
 
 void Connection::write_non_blocking() {

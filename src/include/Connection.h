@@ -23,10 +23,11 @@ public:
     DISALLOW_COPY_AND_MOVE(Connection);
 
     void set_delete_connection_callback(std::function<void(Socket*)> callback);
-    void set_on_connect_callback(const std::function<void(Connection*)>& callback);
+    void set_on_message_callback(const std::function<void(Connection*)>& callback);
 
     void read();
     void write();
+    void send(const char* msg);
 
     const char* get_read_buffer() const;
     void set_read_buffer(const char* str);
@@ -47,6 +48,8 @@ private:
     void write_non_blocking();
     void write_blocking();
 
+    void business();
+
 private:
     EventLoop* m_loop;
     Socket* m_socket;
@@ -57,5 +60,5 @@ private:
 
     std::function<void(Socket*)> m_delete_connection_callback;
 
-    std::function<void(Connection*)> m_on_connect_callback;
+    std::function<void(Connection*)> m_on_message_callback;
 };

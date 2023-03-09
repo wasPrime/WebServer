@@ -16,9 +16,12 @@ public:
 
     DISALLOW_COPY_AND_MOVE(Server);
 
+    void new_connect(std::function<void(Connection*)> callback);
+    void on_message(std::function<void(Connection*)> callback);
+
+private:
     void new_connection(Socket* client_socket);
     void delete_connection(Socket* client_socket);
-    void on_connect(std::function<void(Connection*)> callback);
 
 private:
     EventLoop* m_main_reactor;
@@ -29,5 +32,6 @@ private:
 
     std::unique_ptr<ThreadPool> m_thread_pool;
 
-    std::function<void(Connection*)> m_on_connect_callback;
+    std::function<void(Connection*)> m_new_connect_callback;
+    std::function<void(Connection*)> m_on_message_callback;
 };
