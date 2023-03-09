@@ -3,6 +3,7 @@
 #if defined(OS_LINUX)
 #include <sys/epoll.h>
 #elif defined(OS_MACOS)
+#include <sys/event.h>
 #endif
 
 #include <cstdint>
@@ -30,5 +31,6 @@ private:
 #if defined(OS_LINUX)
     std::vector<epoll_event> m_events;
 #elif defined(OS_MACOS)
+    std::vector<struct kevent> m_events;
 #endif
 };

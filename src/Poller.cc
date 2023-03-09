@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include <array>
 #include <cstring>
 
 #include "util.h"
@@ -84,4 +85,91 @@ std::vector<Channel*> Poller::poll(int timeout) {
 }
 
 #elif defined(OS_MACOS)
+
+Poller::Poller() {
+    m_fd = kqueue();
+    errif(m_fd == -1, "epoll create error");
+    m_events.resize(MAX_EVENTS);
+    // no need to call `bzero` due to already initialized in `resize`
+    // bzero(m_events.data(), sizeof(epoll_event) * MAX_EVENTS);
+}
+
+Poller::~Poller() {
+    if (m_fd != -1) {
+        ::close(m_fd);
+        m_fd = -1;
+    }
+}
+
+void Poller::update_channel(Channel* channel) {
+    std::array<struct kevent, 2> ev;
+    memset(ev.data(), 9, sizeof(ev));
+
+    int n = 0;
+    int op = EV_ADD;
+    if (channel->get_listen_events() & Channel::ET) {
+        op |= EV_CLEAR;
+    }
+    int sockfd = channel->get_fd();
+    if (channel->get_listen_events() & Channel::READ_EVENT) {
+        EV_SET(&ev[n++], sockfd, EVFILT_READ, op, 0, 0, channel);
+    }
+    if (channel->get_listen_events() & Channel::WRITE_EVENT) {
+        EV_SET(&ev[n++], sockfd, EVFILT_WRITE, op, 0, 0, channel);
+    }
+
+    int res = kevent(m_fd, ev.data(), n, nullptr, 0, nullptr);
+    errif(res == -1, "kqueue add event error");
+}
+
+void Poller::delete_channel(Channel* channel) {
+    std::array<struct kevent, 2> ev;
+    int n = 0;
+    int sockfd = channel->get_fd();
+    if (channel->get_listen_events() & Channel::READ_EVENT) {
+        EV_SET(&ev[n++], sockfd, EVFILT_READ, EV_DELETE, 0, 0, channel);
+    }
+    if (channel->get_listen_events() & Channel::WRITE_EVENT) {
+        EV_SET(&ev[n++], sockfd, EVFILT_WRITE, EV_DELETE, 0, 0, channel);
+    }
+    int res = kevent(m_fd, ev.data(), n, nullptr, 0, nullptr);
+    errif(res == -1, "kqueue delete event error");
+
+    channel->set_exist(false);
+}
+
+std::vector<Channel*> Poller::poll(int timeout) {
+    std::vector<Channel*> active_channels;
+    timespec ts;
+    memset(&ts, 0, sizeof(ts));
+    if (timeout != -1) {
+        ts.tv_sec = timeout / 1000;
+        ts.tv_nsec = static_cast<long>(timeout % 1000) * 1000 * 1000;
+    }
+
+    int nfds =
+        kevent(m_fd, nullptr, 0, m_events.data(), MAX_EVENTS, (timeout != -1 ? &ts : nullptr));
+    for (int i = 0; i < nfds; ++i) {
+        auto channel = static_cast<Channel*>(m_events[i].udata);
+        int events = m_events[i].filter;
+        switch (events) {
+            case EVFILT_READ: {
+                channel->set_ready_events(Channel::READ_EVENT | Channel::ET);
+                break;
+            }
+            case EVFILT_WRITE: {
+                channel->set_ready_events(Channel::WRITE_EVENT | Channel::ET);
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+
+        active_channels.push_back(channel);
+    }
+
+    return active_channels;
+}
+
 #endif
