@@ -14,12 +14,13 @@ int main() {
     });
 
     server.on_message([](Connection* conn) {
+        if (conn->get_state() != Connection::State::Connected) {
+            return;
+        }
+
         std::cout << "Message from client " << conn->get_socket()->get_fd() << ": "
                   << conn->get_read_buffer() << std::endl;
-
-        if (conn->get_state() == Connection::State::Connected) {
-            conn->send(conn->get_read_buffer());
-        }
+        conn->send(conn->get_read_buffer());
     });
 
     loop.loop();

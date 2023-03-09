@@ -6,20 +6,20 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <type_traits>
 #include <vector>
 
 #include "macros.h"
 
 class ThreadPool {
 public:
-    ThreadPool(int size = 10);
+    ThreadPool(unsigned int size = 10);
     ~ThreadPool();
 
     DISALLOW_COPY_AND_MOVE(ThreadPool);
 
     template <typename Callable, typename... Args>
-    auto add(Callable&& f, Args&&... args)
-        -> std::future<typename std::result_of<Callable(Args...)>::type>;
+    auto add(Callable&& f, Args&&... args) -> std::future<std::invoke_result_t<Callable, Args...>>;
 
 private:
     std::vector<std::thread> m_threads;

@@ -1,9 +1,6 @@
 #include "Server.h"
 
-#include <ranges>
-
 #include "Exception.h"
-#include "util.h"
 
 Server::Server(EventLoop* loop)
     : m_main_reactor(loop),
@@ -15,15 +12,15 @@ Server::Server(EventLoop* loop)
     };
     m_acceptor->set_new_connection_callback(callback);
 
-    int size = std::thread::hardware_concurrency();
+    unsigned int size = std::thread::hardware_concurrency();
 
     m_sub_reactors.reserve(size);
-    for (int i = 0; i < size; ++i) {
+    for (unsigned int i = 0; i < size; ++i) {
         m_sub_reactors.push_back(std::make_unique<EventLoop>());
     }
 
     m_thread_pool = std::make_unique<ThreadPool>(size);
-    for (auto i : std::views::iota(0, size)) {
+    for (unsigned int i = 0; i < size; ++i) {
         std::function<void()> sub_loop = [this, i] { this->m_sub_reactors[i]->loop(); };
         m_thread_pool->add(sub_loop);
     }

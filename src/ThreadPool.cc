@@ -1,14 +1,12 @@
 #include "ThreadPool.h"
 
-#include <ranges>
-
-ThreadPool::ThreadPool(int size) {
+ThreadPool::ThreadPool(unsigned int size) {
     m_threads.reserve(size);
 
-    for (int i : std::views::iota(0, size)) {
+    for (unsigned int i = 0; i < size; ++i) {
         printf("ThreadPool create thread %d\n", i);
 
-        m_threads.push_back(std::thread([this] {
+        m_threads.emplace_back([this] {
             while (true) {
                 std::function<void()> task;
 
@@ -26,7 +24,7 @@ ThreadPool::ThreadPool(int size) {
 
                 task();
             }
-        }));
+        });
     }
 }
 

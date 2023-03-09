@@ -1,7 +1,6 @@
 #include <unistd.h>
 
 #include <iostream>
-#include <ranges>
 
 #include "Connection.h"
 #include "Socket.h"
@@ -9,13 +8,13 @@
 #include "util.h"
 
 void single_client(int msg_count, unsigned int wait) {
-    Socket socket;
-    socket.connect(LOCAL_HOST, PORT);
-    Connection conn(nullptr, &socket);
+    auto socket = new Socket();
+    socket->connect(LOCAL_HOST, PORT);
+    Connection conn(nullptr, socket);
 
     sleep(wait);
 
-    for (int i : std::views::iota(0, msg_count)) {
+    for (int i = 0; i < msg_count; ++i) {
         conn.set_send_buffer("I'm a client");
         conn.write();
         if (conn.get_state() == Connection::State::Closed) {
@@ -35,7 +34,7 @@ int main() {
 
     ThreadPool thread_pool(threads);
     std::function<void()> func = [&] { single_client(msgs, wait); };
-    for (int i : std::views::iota(0, threads)) {
+    for (int i = 0; i < threads; ++i) {
         std::cout << "add event[" << i << "] to thread pool" << std::endl;
 
         thread_pool.add(func);

@@ -4,8 +4,8 @@
 
 template <typename Callable, typename... Args>
 auto ThreadPool::add(Callable&& f, Args&&... args)
-    -> std::future<typename std::result_of<Callable(Args...)>::type> {
-    using return_type = typename std::result_of<Callable(Args...)>::type;
+    -> std::future<std::invoke_result_t<Callable, Args...>> {
+    using return_type = std::invoke_result_t<Callable, Args...>;
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
         std::bind(std::forward<Callable>(f), std::forward<Args>(args)...));

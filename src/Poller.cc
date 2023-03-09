@@ -3,7 +3,6 @@
 #include <unistd.h>
 
 #include <cstring>
-#include <ranges>
 
 #include "util.h"
 

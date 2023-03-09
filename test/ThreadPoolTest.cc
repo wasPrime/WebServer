@@ -2,7 +2,7 @@
 
 #include "ThreadPool.h"
 
-void print(int a, double b, const char* c, std::string d) {
+void print(int a, double b, const char* c, const std::string& d) {
     std::cout << a << " " << b << " " << c << " " << d << std::endl;
 }
 
@@ -11,10 +11,10 @@ void test() {
 }
 
 int main() {
-    int size = std::thread::hardware_concurrency();
+    unsigned int size = std::thread::hardware_concurrency();
     ThreadPool thread_pool(size);
 
-    std::function<void()> func = std::bind(print, 1, 3.14, "hello", std::string("world"));
+    std::function<void()> func = [] { print(1, 3.14, "hello", std::string("world")); };
     thread_pool.add(func);
 
     func = test;

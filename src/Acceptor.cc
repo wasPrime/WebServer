@@ -1,5 +1,7 @@
 #include "Acceptor.h"
 
+#include <utility>
+
 #include "util.h"
 
 // TODO:
@@ -7,7 +9,7 @@
 // at clang++ 15.0.6 at present
 // #include <format>
 
-Acceptor::Acceptor(EventLoop* loop) : m_loop(loop), m_server_socket(std::make_unique<Socket>()) {
+Acceptor::Acceptor(EventLoop* loop) : m_server_socket(std::make_unique<Socket>()) {
     InetAddress server_addr(LOCAL_HOST, PORT);
     m_server_socket->bind(&server_addr);
     m_server_socket->listen();
@@ -41,5 +43,5 @@ void Acceptor::accept_connection() {
 }
 
 void Acceptor::set_new_connection_callback(std::function<void(Socket*)> callback) {
-    m_new_connection_callback = callback;
+    m_new_connection_callback = std::move(callback);
 }

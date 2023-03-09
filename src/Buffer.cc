@@ -1,7 +1,6 @@
 #include "Buffer.h"
 
 #include <iostream>
-#include <ranges>
 
 Buffer::Buffer() = default;
 
