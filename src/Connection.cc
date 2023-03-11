@@ -136,11 +136,12 @@ ReturnCode Connection::write_non_blocking() {
     int sockfd = m_socket->get_fd();
 
     const char* buf = m_send_buffer->c_str();
-    long data_size = static_cast<long>(m_send_buffer->size());
+    std::size_t total_size = m_send_buffer->size();
 
-    long data_left = data_size;
-    while (data_left > 0) {
-        ssize_t write_bytes = ::write(sockfd, buf + data_size - data_left, data_left);
+    std::size_t already_send_size = 0;
+    while (already_send_size < total_size) {
+        ssize_t write_bytes =
+            ::write(sockfd, buf + already_send_size, total_size - already_send_size);
         if (write_bytes == -1) {
             if (errno == EINTR) {
                 printf("continue writing\n");
@@ -156,7 +157,7 @@ ReturnCode Connection::write_non_blocking() {
             return ReturnCode::RC_CONNECTION_ERROR;
         }
 
-        data_left -= write_bytes;
+        already_send_size += write_bytes;
     }
 
     return ReturnCode::RC_SUCCESS;
