@@ -4,20 +4,21 @@
 #include <cstring>
 #include <iostream>
 
-#include "Buffer.h"
 #include "Connection.h"
 #include "Socket.h"
 #include "util.h"
 
 int main() {
-    auto socket = new Socket();  // TODO: Adjust to grasp ownership by smart point
-    socket->connect(LOCAL_HOST, PORT);
+    Socket socket;
+    socket.create();
+    socket.connect(LOCAL_HOST, PORT);
 
-    Connection conn(nullptr, socket);
+    Connection conn(socket.get_fd(), nullptr);
 
     while (true) {
-        conn.getline_send_buffer();
-        conn.write();
+        std::string input;
+        std::getline(std::cin, input);
+        conn.send(input.c_str());
         if (conn.get_state() == Connection::State::Closed) {
             conn.close();
             break;

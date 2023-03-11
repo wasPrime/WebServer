@@ -1,16 +1,13 @@
 #include "Channel.h"
 
-Channel::Channel(EventLoop* loop, int fd)
-    : m_loop(loop), m_fd(fd), m_listen_events(0), m_ready_events(0), m_exist(false) {
+#include <utility>
+
+Channel::Channel(int fd, EventLoop* loop)
+    : m_fd(fd), m_loop(loop), m_listen_events(0), m_ready_events(0), m_exist(false) {
 }
 
 Channel::~Channel() {
     m_loop->delete_channel(this);
-}
-
-void Channel::use_ET() {
-    m_listen_events |= ET;
-    m_loop->update_channel(this);
 }
 
 void Channel::enable_read() {
@@ -20,6 +17,11 @@ void Channel::enable_read() {
 
 void Channel::enable_write() {
     m_listen_events |= WRITE_EVENT;
+    m_loop->update_channel(this);
+}
+
+void Channel::enable_ET() {
+    m_listen_events |= ET;
     m_loop->update_channel(this);
 }
 
@@ -57,15 +59,15 @@ void Channel::set_ready_events(int events) {
     }
 }
 
-void Channel::set_read_callback(std::function<void()> read_callback) {
+void Channel::set_read_callback(const std::function<void()>& read_callback) {
     m_read_callback = read_callback;
 }
 
-void Channel::set_write_callback(std::function<void()> write_callback) {
+void Channel::set_write_callback(const std::function<void()>& write_callback) {
     m_write_callback = write_callback;
 }
 
-void Channel::handle_event() {
+void Channel::handle_event() const {
     if (m_ready_events & READ_EVENT) {
         m_read_callback();
     }

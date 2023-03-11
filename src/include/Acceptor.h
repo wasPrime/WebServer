@@ -5,20 +5,20 @@
 #include "Channel.h"
 #include "EventLoop.h"
 #include "Socket.h"
-#include "macros.h"
+#include "common.h"
 
 class Acceptor {
 public:
-    Acceptor(EventLoop* loop);
+    explicit Acceptor(EventLoop* loop);
     ~Acceptor();
 
     DISALLOW_COPY_AND_MOVE(Acceptor);
 
-    void accept_connection();
-    void set_new_connection_callback(std::function<void(Socket*)> callback);
+    void accept_connection() const;
+    void set_new_connection_callback(const std::function<void(int)>& callback);
 
 private:
     std::unique_ptr<Socket> m_server_socket;
     std::unique_ptr<Channel> m_accept_channel;
-    std::function<void(Socket*)> m_new_connection_callback;
+    std::function<void(int)> m_new_connection_callback;
 };

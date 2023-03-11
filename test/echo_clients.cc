@@ -1,44 +1,68 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <mutex>
 
 #include "Connection.h"
 #include "Socket.h"
 #include "ThreadPool.h"
 #include "util.h"
 
-void single_client(int msg_count, unsigned int wait) {
-    auto socket = new Socket();
-    socket->connect(LOCAL_HOST, PORT);
-    Connection conn(nullptr, socket);
-
-    sleep(wait);
-
-    for (int i = 0; i < msg_count; ++i) {
-        conn.set_send_buffer("I'm a client");
-        conn.write();
-        if (conn.get_state() == Connection::State::Closed) {
-            conn.close();
-            break;
-        }
-
-        conn.read();
-        std::cout << "msg count " << i << ": " << conn.get_read_buffer() << std::endl;
+class ExecuteGroup {
+public:
+    explicit ExecuteGroup(int thread_count, int msg_count)
+        : m_thread_count(thread_count), m_msg_count(msg_count) {
     }
-}
+
+    void run() {
+        ThreadPool thread_pool(m_thread_count);
+        for (int i = 0; i < m_thread_count; ++i) {
+            {
+                std::lock_guard<std::mutex> lock(m_print_mtx);
+                std::cout << "add event[" << i << "] to thread pool" << std::endl;
+            }
+
+            thread_pool.add([this, i] { single_client(i, m_msg_count); });
+        }
+    }
+
+private:
+    void single_client(int client_id, int msg_count) {
+        Socket socket;
+        socket.create();
+        socket.connect(LOCAL_HOST, PORT);
+
+        Connection conn(socket.get_fd(), nullptr);
+
+        for (int i = 0; i < msg_count; ++i) {
+            conn.send("I'm a client");
+            if (conn.get_state() == Connection::State::Closed) {
+                conn.close();
+                break;
+            }
+
+            conn.read();
+            {
+                std::lock_guard<std::mutex> lock(m_print_mtx);
+                std::cout << "[client_id: " << client_id << "][msg_id: " << i
+                          << "] msg: " << conn.get_read_buffer() << std::endl;
+            }
+        }
+    }
+
+private:
+    int m_thread_count;
+    int m_msg_count;
+
+    std::mutex m_print_mtx;
+};
 
 int main() {
-    int threads = 10;
-    int msgs = 10;
-    int wait = 0;
+    int client_id = 10;
+    int msg_count = 10;
 
-    ThreadPool thread_pool(threads);
-    std::function<void()> func = [&] { single_client(msgs, wait); };
-    for (int i = 0; i < threads; ++i) {
-        std::cout << "add event[" << i << "] to thread pool" << std::endl;
-
-        thread_pool.add(func);
-    }
+    ExecuteGroup execute_group(client_id, msg_count);
+    execute_group.run();
 
     return 0;
 }

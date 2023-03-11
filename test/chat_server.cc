@@ -1,39 +1,47 @@
-#include "Server.h"
-
 #include <iostream>
+#include <string>
 #include <unordered_map>
 
-#include "EventLoop.h"
+#include "Server.h"
 
 int main() {
     std::unordered_map<int, Connection*> clients;
 
-    EventLoop loop;
-    Server server(&loop);
+    Server server;
 
-    server.new_connect([&](Connection* conn) {
+    server.on_connect([&](Connection* conn) {
         int client_fd = conn->get_socket()->get_fd();
         std::cout << "New connection fd: " << client_fd << std::endl;
 
-        clients[client_fd] = conn;
-
+        std::string log_in_msg;
+        log_in_msg.append("Client[").append(std::to_string(client_fd)).append("] logs in");
         for (auto& each : clients) {
             Connection* another_client = each.second;
-            another_client->send(conn->get_read_buffer());
+            another_client->send(log_in_msg.c_str());
         }
+
+        clients[client_fd] = conn;
     });
 
     server.on_message([&](Connection* conn) {
         std::cout << "Message from client " << conn->get_socket()->get_fd() << ": "
                   << conn->get_read_buffer() << std::endl;
 
-        for (auto& each : clients) {
-            Connection* another_client = each.second;
-            another_client->send(conn->get_read_buffer());
+        std::string broadcast_msg;
+        broadcast_msg.append("Client[")
+            .append(std::to_string(conn->get_socket()->get_fd()))
+            .append("] said: ")
+            .append(conn->get_read_buffer());
+        for (auto& [fd_in_map, client_in_map] : clients) {
+            if (fd_in_map == conn->get_socket()->get_fd()) {
+                continue;
+            }
+
+            client_in_map->send(broadcast_msg.c_str());
         }
     });
 
-    loop.loop();
+    server.start();
 
     return 0;
 }

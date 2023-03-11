@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "Poller.h"
-#include "macros.h"
+#include "common.h"
 
 class Poller;
 class Channel;
@@ -20,5 +20,4 @@ public:
 
 private:
     std::unique_ptr<Poller> m_poller;
-    bool m_quit;
 };

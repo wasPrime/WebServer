@@ -5,15 +5,14 @@
 #include <array>
 #include <cstring>
 
-#include "util.h"
-
 inline constexpr int MAX_EVENTS = 1000;
 
 #if defined(OS_LINUX)
 
 Poller::Poller() {
     m_fd = epoll_create1(0);
-    errif(m_fd == -1, "epoll create error");
+    assert(m_fd != -1);
+
     m_events.resize(MAX_EVENTS);
     // no need to call `bzero` due to already initialized in `resize`
     // bzero(m_events.data(), sizeof(epoll_event) * MAX_EVENTS);
@@ -26,7 +25,7 @@ Poller::~Poller() {
     }
 }
 
-void Poller::update_channel(Channel* channel) {
+ReturnCode Poller::update_channel(Channel* channel) const {
     epoll_event ev;
     bzero(&ev, sizeof(ev));
     ev.data.ptr = channel;
@@ -42,27 +41,31 @@ void Poller::update_channel(Channel* channel) {
 
     int sockfd = channel->get_fd();
     if (!channel->get_exist()) {
-        errif(epoll_ctl(m_fd, EPOLL_CTL_ADD, sockfd, &ev) == -1, "epoll add error");
+        assert(epoll_ctl(m_fd, EPOLL_CTL_ADD, sockfd, &ev) != -1);
         channel->set_exist();
         // debug("Poller: add Channel to epoll tree success, the Channel's fd is: ", fd);
     } else {
-        errif(epoll_ctl(m_fd, EPOLL_CTL_MOD, sockfd, &ev) == -1, "epoll modify error");
+        assert(epoll_ctl(m_fd, EPOLL_CTL_MOD, sockfd, &ev) != -1);
         // debug("Poller: modify Channel in epoll tree success, the Channel's fd is: ", fd);
     }
+
+    return ReturnCode::RC_SUCCESS;
 }
 
-void Poller::delete_channel(Channel* channel) {
+ReturnCode Poller::delete_channel(Channel* channel) const {
     // Note: fd doesn't be deleted from epoll mannually as it is removed when ::close
     // int sockfd = channel->get_fd();
     // errif(epoll_ctl(m_fd, EPOLL_CTL_DEL, sockfd, nullptr) == -1, "epoll delete error");
 
     channel->set_exist(false);
+
+    return ReturnCode::RC_SUCCESS;
 }
 
-std::vector<Channel*> Poller::poll(int timeout) {
+std::vector<Channel*> Poller::poll(long timeout) {
     std::vector<Channel*> active_channels;
     int nfds = epoll_wait(m_fd, m_events.data(), MAX_EVENTS, timeout);
-    errif(nfds == -1, "epoll wait error");
+    assert(nfds != -1);
 
     for (auto&& event : std::views::take(m_events, nfds)) {
         Channel* ch = static_cast<Channel*>(event.data.ptr);
@@ -88,7 +91,8 @@ std::vector<Channel*> Poller::poll(int timeout) {
 
 Poller::Poller() {
     m_fd = kqueue();
-    errif(m_fd == -1, "epoll create error");
+    assert(m_fd != -1);
+
     m_events.resize(MAX_EVENTS);
     // no need to call `bzero` due to already initialized in `resize`
     // bzero(m_events.data(), sizeof(epoll_event) * MAX_EVENTS);
@@ -101,7 +105,7 @@ Poller::~Poller() {
     }
 }
 
-void Poller::update_channel(Channel* channel) {
+ReturnCode Poller::update_channel(Channel* channel) const {
     std::array<struct kevent, 2> ev;
     memset(ev.data(), 9, sizeof(ev));
 
@@ -119,10 +123,15 @@ void Poller::update_channel(Channel* channel) {
     }
 
     int res = kevent(m_fd, ev.data(), n, nullptr, 0, nullptr);
-    errif(res == -1, "kqueue add event error");
+    if (res == -1) {
+        perror("kqueue add event error");
+        return ReturnCode::RC_POLLER_ERROR;
+    }
+
+    return ReturnCode::RC_SUCCESS;
 }
 
-void Poller::delete_channel(Channel* channel) {
+ReturnCode Poller::delete_channel(Channel* channel) const {
     std::array<struct kevent, 2> ev;
     int n = 0;
     int sockfd = channel->get_fd();
@@ -132,26 +141,31 @@ void Poller::delete_channel(Channel* channel) {
     if (channel->get_listen_events() & Channel::WRITE_EVENT) {
         EV_SET(&ev[n++], sockfd, EVFILT_WRITE, EV_DELETE, 0, 0, channel);
     }
-    int res = kevent(m_fd, ev.data(), n, nullptr, 0, nullptr);
-    errif(res == -1, "kqueue delete event error");
 
-    channel->set_exist(false);
+    int res = kevent(m_fd, ev.data(), n, nullptr, 0, nullptr);
+    if (res == -1) {
+        perror("kqueue delete event error");
+        return ReturnCode::RC_POLLER_ERROR;
+    }
+
+    return ReturnCode::RC_SUCCESS;
 }
 
-std::vector<Channel*> Poller::poll(int timeout) {
-    std::vector<Channel*> active_channels;
+std::vector<Channel*> Poller::poll(long timeout) {
     timespec ts;
     memset(&ts, 0, sizeof(ts));
     if (timeout != -1) {
         ts.tv_sec = timeout / 1000;
-        ts.tv_nsec = static_cast<long>(timeout % 1000) * 1000 * 1000;
+        ts.tv_nsec = (timeout % 1000) * 1000 * 1000;
     }
 
     int nfds =
         kevent(m_fd, nullptr, 0, m_events.data(), MAX_EVENTS, (timeout != -1 ? &ts : nullptr));
+    std::vector<Channel*> active_channels;
+    active_channels.reserve(nfds);
     for (int i = 0; i < nfds; ++i) {
         auto channel = static_cast<Channel*>(m_events[i].udata);
-        int events = m_events[i].filter;
+        int16_t events = m_events[i].filter;
         switch (events) {
             case EVFILT_READ: {
                 channel->set_ready_events(Channel::READ_EVENT | Channel::ET);

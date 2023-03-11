@@ -1,32 +1,31 @@
 #include "Connection.h"
 
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include <cstring>
 
-#include "macros.h"
-#include "util.h"
+#include "common.h"
 
 inline constexpr int READ_BUFFER = 1024;
 
-Connection::Connection(EventLoop* loop, Socket* socket)
-    : m_loop(loop),
-      m_socket(socket),
+Connection::Connection(int fd, EventLoop* loop)
+    : m_socket(std::make_unique<Socket>()),
       m_state(State::Connected),
       m_read_buffer(std::make_unique<Buffer>()),
       m_send_buffer(std::make_unique<Buffer>()) {
-    if (m_loop != nullptr) {
-        m_channel = std::make_unique<Channel>(loop, socket->get_fd());
+    m_socket->set_fd(fd);
+
+    if (loop != nullptr) {
+        m_channel = std::make_unique<Channel>(fd, loop);
         m_channel->enable_read();
-        m_channel->use_ET();
+        m_channel->enable_ET();
     }
 }
 
-Connection::~Connection() {
-    delete m_socket;
-}
+Connection::~Connection() = default;
 
-void Connection::set_delete_connection_callback(std::function<void(Socket*)> callback) {
+void Connection::set_delete_connection_callback(const std::function<void(int)>& callback) {
     m_delete_connection_callback = callback;
 }
 
@@ -36,26 +35,29 @@ void Connection::set_on_message_callback(const std::function<void(Connection*)>&
 }
 
 void Connection::business() {
-    read();
+    ReturnCode read_ret = read();
+    if (read_ret != ReturnCode::RC_SUCCESS) {
+        return;  // read_ret;
+    }
+
     m_on_message_callback(this);
 }
 
-void Connection::read() {
-    ASSERT(m_state == State::Connected, "connection state is disconnected!");
+ReturnCode Connection::read() {
+    if (m_state != State::Connected) {
+        perror("Connection is not connected, can not read");
+        return ReturnCode::RC_CONNECTION_ERROR;
+    }
 
     m_read_buffer->clear();
 
-    if (m_socket->is_non_blocking()) {
-        read_non_blocking();
-    } else {
-        read_blocking();
-    }
+    return m_socket->is_non_blocking() ? read_non_blocking() : read_blocking();
 }
 
-void Connection::read_non_blocking() {
+ReturnCode Connection::read_non_blocking() {
     int sockfd = m_socket->get_fd();
-    std::array<char, 1024> buf;
 
+    std::array<char, 1024> buf;
     while (true) {
         memset(&buf, 0, sizeof(buf));
 
@@ -67,22 +69,25 @@ void Connection::read_non_blocking() {
             continue;
         } else if (read_bytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
             break;
-        } else if (read_bytes == 0) {  // EOF, client disconnect
+        } else if (read_bytes == 0) {  // EOF, client disconnected
             printf("read EOF, client fd %d disconnected\n", sockfd);
             m_state = State::Closed;
             close();
-            break;
+            return ReturnCode::RC_CONNECTION_ERROR;
         } else {
             printf("Other error on client fd %d\n", sockfd);
             m_state = State::Closed;
             close();
-            break;
+            return ReturnCode::RC_CONNECTION_ERROR;
         }
     }
+
+    return ReturnCode::RC_SUCCESS;
 }
 
-void Connection::read_blocking() {
+ReturnCode Connection::read_blocking() {
     int sockfd = m_socket->get_fd();
+
     unsigned int receive_size = 0;
     socklen_t len = sizeof(receive_size);
     getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &receive_size, &len);
@@ -94,62 +99,83 @@ void Connection::read_blocking() {
     } else if (read_bytes == 0) {
         printf("read EOF, blocking client fd %d disconnected\n", sockfd);
         m_state = State::Closed;
+        return ReturnCode::RC_CONNECTION_ERROR;
     } else if (read_bytes == -1) {
         printf("Other error on blocking client fd %d\n", sockfd);
         m_state = State::Closed;
+        return ReturnCode::RC_CONNECTION_ERROR;
     }
+
+    return ReturnCode::RC_SUCCESS;
 }
 
-void Connection::write() {
-    ASSERT(m_state == State::Connected, "connection state is disconnected!");
+ReturnCode Connection::send(const char* msg) {
+    set_send_buffer(msg);
 
-    if (m_socket->is_non_blocking()) {
-        write_non_blocking();
-    } else {
-        write_blocking();
+    ReturnCode write_ret = write();
+    if (write_ret != ReturnCode::RC_SUCCESS) {
+        return write_ret;
     }
+
+    return ReturnCode::RC_SUCCESS;
+}
+
+ReturnCode Connection::write() {
+    if (m_state != State::Connected) {
+        perror("Connection is not connected, can not write");
+        return ReturnCode::RC_CONNECTION_ERROR;
+    }
+
+    ReturnCode return_code = m_socket->is_non_blocking() ? write_non_blocking() : write_blocking();
 
     m_send_buffer->clear();
+
+    return return_code;
 }
 
-void Connection::send(const char* msg) {
-    set_send_buffer(msg);
-    write();
-}
-
-void Connection::write_non_blocking() {
+ReturnCode Connection::write_non_blocking() {
     int sockfd = m_socket->get_fd();
 
     const char* buf = m_send_buffer->c_str();
-    int data_size = m_send_buffer->size();
+    long data_size = static_cast<long>(m_send_buffer->size());
 
-    int data_left = data_size;
+    long data_left = data_size;
     while (data_left > 0) {
         ssize_t write_bytes = ::write(sockfd, buf + data_size - data_left, data_left);
-        if (write_bytes == -1 && errno == EINTR) {
-            printf("continue writing\n");
-            continue;
-        }
-        if (write_bytes == -1 && errno == EAGAIN) {
-            break;
-        }
         if (write_bytes == -1) {
+            if (errno == EINTR) {
+                printf("continue writing\n");
+                continue;
+            }
+            if (errno == EAGAIN) {
+                return ReturnCode::RC_CONNECTION_ERROR;
+            }
+
+            // Other error
             printf("Other error on client fd %d\n", sockfd);
             m_state = State::Closed;
-            break;
+            return ReturnCode::RC_CONNECTION_ERROR;
         }
 
         data_left -= write_bytes;
     }
+
+    return ReturnCode::RC_SUCCESS;
 }
 
-void Connection::write_blocking() {
+ReturnCode Connection::write_blocking() {
     int sockfd = m_socket->get_fd();
+    // TODO:
+    // Don't considering the circumstance that the size of m_send_buffer is larger than the size of
+    // TCP buffer thus there may be bugs
     ssize_t bytes_write = ::write(sockfd, m_send_buffer->c_str(), m_send_buffer->size());
     if (bytes_write == -1) {
         printf("Other error on blocking client fd %d\n", sockfd);
         m_state = State::Closed;
+        return ReturnCode::RC_CONNECTION_ERROR;
     }
+
+    return ReturnCode::RC_SUCCESS;
 }
 
 const char* Connection::get_read_buffer() const {
@@ -168,18 +194,14 @@ void Connection::set_send_buffer(const char* str) {
     m_send_buffer->set_buf(str);
 }
 
-void Connection::getline_send_buffer() {
-    m_send_buffer->getline();
-}
-
 Connection::State Connection::get_state() const {
     return m_state;
 }
 
 Socket* Connection::get_socket() const {
-    return m_socket;
+    return m_socket.get();
 }
 
 void Connection::close() {
-    m_delete_connection_callback(m_socket);
+    m_delete_connection_callback(m_socket->get_fd());
 }

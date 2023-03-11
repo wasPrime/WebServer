@@ -1,12 +1,12 @@
 #include "ThreadPool.h"
 
 ThreadPool::ThreadPool(unsigned int size) {
-    m_threads.reserve(size);
+    m_workers.reserve(size);
 
     for (unsigned int i = 0; i < size; ++i) {
         printf("ThreadPool create thread %d\n", i);
 
-        m_threads.emplace_back([this] {
+        m_workers.emplace_back([this] {
             while (true) {
                 std::function<void()> task;
 
@@ -35,9 +35,9 @@ ThreadPool::~ThreadPool() {
     }
     m_cv.notify_all();
 
-    for (std::thread& t : m_threads) {
-        if (t.joinable()) {
-            t.join();
+    for (std::thread& worker : m_workers) {
+        if (worker.joinable()) {
+            worker.join();
         }
     }
 }

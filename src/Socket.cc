@@ -1,20 +1,18 @@
 #include "Socket.h"
 
+#include <arpa/inet.h>
 #include <fcntl.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include <cerrno>
+#include <cstdio>
+#include <cstring>
 
-#include "util.h"
+#include "common.h"
 
-Socket::Socket() {
-    m_fd = socket(AF_INET, SOCK_STREAM, 0);
-    errif(m_fd == -1, "socket create error");
-}
-
-Socket::Socket(int fd) {
-    m_fd = fd;
-    errif(m_fd == -1, "socket create error");
+Socket::Socket() : m_fd(-1) {
 }
 
 Socket::~Socket() {
@@ -24,97 +22,139 @@ Socket::~Socket() {
     }
 }
 
-void Socket::bind(InetAddress* addr) const {
-    errif(::bind(m_fd, reinterpret_cast<const sockaddr*>(&addr->get_addr()),
-                 sizeof(addr->get_addr())) == -1,
-          "socket bind error");
-}
-
-void Socket::listen() const {
-    errif(::listen(m_fd, SOMAXCONN) == -1, "socket listen error");
-}
-
-int Socket::accept(InetAddress* addr) const {
-    int client_sockfd = -1;
-    sockaddr_in tmp_addr;
-    socklen_t addr_len = sizeof(tmp_addr);
-
-    if (is_non_blocking()) {
-        while (true) {
-            client_sockfd = ::accept(m_fd, reinterpret_cast<sockaddr*>(&tmp_addr), &addr_len);
-            if (client_sockfd == -1) {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // printf("no connection yet\n");
-                    continue;
-                } else {
-                    errif(true, "socket accept error");
-                }
-            } else {
-                break;
-            }
-        }
-    } else {
-        client_sockfd = ::accept(m_fd, reinterpret_cast<sockaddr*>(&tmp_addr), &addr_len);
-        errif(client_sockfd == -1, "socket accept error");
-    }
-
-    addr->set_addr(tmp_addr);
-
-    return client_sockfd;
-}
-
-void Socket::connect(InetAddress* addr) const {
-    // for client socket
-    if (fcntl(m_fd, F_GETFL) & O_NONBLOCK) {
-        while (true) {
-            int ret = ::connect(m_fd, reinterpret_cast<const sockaddr*>(&addr->get_addr()),
-                                sizeof(addr->get_addr()));
-            if (ret == 0) {
-                break;
-            }
-            if (ret == -1) {
-                if (errno == EINPROGRESS) {
-                    continue;
-
-                    // 连接非阻塞式sockfd建议的做法：
-                    // The recommended practice for connecting non-blocking socket is below:
-                    // The socket is nonblocking and the connection cannot be
-                    // completed immediately.  (UNIX domain sockets failed with
-                    // EAGAIN instead.)  It is possible to select(2) or poll(2)
-                    // for completion by selecting the socket for writing.  After
-                    // select(2) indicates writability, use getsockopt(2) to read
-                    // the SO_ERROR option at level SOL_SOCKET to determine
-                    // whether connect() completed successfully (SO_ERROR is
-                    // zero) or unsuccessfully (SO_ERROR is one of the usual
-                    // error codes listed here, explaining the reason for the
-                    // failure).
-                    //
-                    // For simplicity here consistently try to connect until succeed
-                    // and it's equivalent to blocking
-
-                } else {
-                    errif(true, "socket connect error");
-                }
-            }
-        }
-    } else {
-        errif(::connect(m_fd, reinterpret_cast<const sockaddr*>(&addr->get_addr()),
-                        sizeof(addr->get_addr())) == -1,
-              "socket connect error");
-    }
-}
-
-void Socket::connect(const char* ip, uint16_t port) const {
-    InetAddress server_addr(ip, port);
-    connect(&server_addr);
+void Socket::set_fd(int fd) {
+    m_fd = fd;
 }
 
 int Socket::get_fd() const {
     return m_fd;
 }
 
-void Socket::set_non_blocking() const {
-    fcntl(m_fd, F_SETFL, fcntl(m_fd, F_GETFL) | O_NONBLOCK);
+ReturnCode Socket::create() {
+    assert(m_fd == -1);  // make sure it hasn't been inititialized yet
+
+    m_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (m_fd == -1) {
+        perror("Failed to create socket");
+        return ReturnCode::RC_SOCKET_ERROR;
+    }
+
+    return ReturnCode::RC_SUCCESS;
+}
+
+ReturnCode Socket::bind(const char* ip, uint16_t port) const {
+    assert(m_fd != -1);
+
+    sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(ip);
+    addr.sin_port = htons(port);
+    if (::bind(m_fd, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == -1) {
+        perror("Failed to bind socket");
+        return ReturnCode::RC_SOCKET_ERROR;
+    }
+
+    return ReturnCode::RC_SUCCESS;
+}
+
+ReturnCode Socket::listen() const {
+    assert(m_fd != -1);
+
+    if (::listen(m_fd, SOMAXCONN) == -1) {
+        perror("Failed to listen socket");
+        return ReturnCode::RC_SOCKET_ERROR;
+    }
+
+    return ReturnCode::RC_SUCCESS;
+}
+
+ReturnCode Socket::accept(int& client_fd) const {
+    auto accept_with_non_blocking = [&]() -> ReturnCode {
+        while (true) {
+            client_fd = ::accept(m_fd, nullptr, nullptr);
+            if (client_fd != -1) {
+                return ReturnCode::RC_SUCCESS;
+            }
+            // else: client_fd == -1
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                continue;
+            }
+
+            perror("Failed to accept socket");
+            return ReturnCode::RC_SOCKET_ERROR;
+        }
+    };
+
+    auto accept_with_blocking = [&]() -> ReturnCode {
+        client_fd = ::accept(m_fd, nullptr, nullptr);
+        if (client_fd == -1) {
+            perror("Failed to accept socket");
+            return ReturnCode::RC_SOCKET_ERROR;
+        }
+
+        return ReturnCode::RC_SUCCESS;
+    };
+
+    return is_non_blocking() ? accept_with_non_blocking() : accept_with_blocking();
+}
+
+ReturnCode Socket::connect(const char* ip, uint16_t port) const {
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(ip);
+    addr.sin_port = htons(port);
+
+    auto connect_with_non_blocking = [&]() -> ReturnCode {
+        // TODO: The recommended practice for connecting non-blocking socket is below:
+        //
+        // The socket is nonblocking and the connection cannot be
+        // completed immediately.  (UNIX domain sockets failed with
+        // EAGAIN instead.)  It is possible to select(2) or poll(2)
+        // for completion by selecting the socket for writing.  After
+        // select(2) indicates writability, use getsockopt(2) to read
+        // the SO_ERROR option at level SOL_SOCKET to determine
+        // whether connect() completed successfully (SO_ERROR is
+        // zero) or unsuccessfully (SO_ERROR is one of the usual
+        // error codes listed here, explaining the reason for the
+        // failure).
+        //
+        // For simplicity here consistently try to connect until succeed
+        // and it's equivalent to blocking
+
+        while (true) {
+            int ret = ::connect(m_fd, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr));
+            if (ret == 0) {
+                return ReturnCode::RC_SUCCESS;
+            }
+            if (ret == -1 && errno != EINPROGRESS) {
+                perror("Failed to connect socket");
+                return ReturnCode::RC_SOCKET_ERROR;
+            }
+        }
+    };
+
+    auto connect_with_blocking = [&]() -> ReturnCode {
+        int ret = ::connect(m_fd, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr));
+        if (ret == -1) {
+            perror("Failed to connect socket");
+            return ReturnCode::RC_SOCKET_ERROR;
+        }
+
+        return ReturnCode::RC_SUCCESS;
+    };
+
+    return is_non_blocking() ? connect_with_non_blocking() : connect_with_blocking();
+}
+
+ReturnCode Socket::set_non_blocking() const {
+    if (fcntl(m_fd, F_SETFL, fcntl(m_fd, F_GETFL) | O_NONBLOCK) == -1) {
+        perror("Socket set non-blocking failed");
+        return ReturnCode::RC_SOCKET_ERROR;
+    }
+
+    return ReturnCode::RC_SUCCESS;
 }
 
 bool Socket::is_non_blocking() const {

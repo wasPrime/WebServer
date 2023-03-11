@@ -1,12 +1,12 @@
 #include "EventLoop.h"
 
-EventLoop::EventLoop() : m_poller(std::make_unique<Poller>()), m_quit(false) {
+EventLoop::EventLoop() : m_poller(std::make_unique<Poller>()) {
 }
 
 EventLoop::~EventLoop() = default;
 
 void EventLoop::loop() {
-    while (!m_quit) {
+    while (true) {
         std::vector<Channel*> active_channels = m_poller->poll();
         for (Channel* active_channel : active_channels) {
             active_channel->handle_event();

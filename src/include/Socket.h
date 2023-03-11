@@ -1,27 +1,29 @@
 #pragma once
 
-#include "InetAddress.h"
-#include "macros.h"
+#include <cstdint>
+
+#include "common.h"
 
 class Socket {
 public:
     Socket();
-    Socket(int fd);
     ~Socket();
 
     DISALLOW_COPY_AND_MOVE(Socket);
 
-    void bind(InetAddress* addr) const;
-    void listen() const;
+    void set_fd(int fd);
+    [[nodiscard]] int get_fd() const;
 
-    int accept(InetAddress* addr) const;
-    void connect(InetAddress* addr) const;
-    void connect(const char* ip, uint16_t port) const;
+    ReturnCode create();
 
-    int get_fd() const;
+    ReturnCode bind(const char* ip, uint16_t port) const;
+    [[nodiscard]] ReturnCode listen() const;
+    ReturnCode accept(int& client_fd) const;
 
-    void set_non_blocking() const;
-    bool is_non_blocking() const;
+    ReturnCode connect(const char* ip, uint16_t port) const;
+
+    [[nodiscard]] ReturnCode set_non_blocking() const;
+    [[nodiscard]] bool is_non_blocking() const;
 
 private:
     int m_fd;

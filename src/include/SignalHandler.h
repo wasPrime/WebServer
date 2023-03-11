@@ -1,12 +1,8 @@
 #pragma once
 
 #include <csignal>
-// #include <signal.h>
-
 #include <functional>
 #include <unordered_map>
-
-#include "macros.h"
 
 class SignalHandler {
 public:

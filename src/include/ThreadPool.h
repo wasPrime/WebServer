@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <future>
@@ -9,11 +10,11 @@
 #include <type_traits>
 #include <vector>
 
-#include "macros.h"
+#include "common.h"
 
 class ThreadPool {
 public:
-    ThreadPool(unsigned int size = 10);
+    explicit ThreadPool(unsigned int size = std::thread::hardware_concurrency());
     ~ThreadPool();
 
     DISALLOW_COPY_AND_MOVE(ThreadPool);
@@ -22,11 +23,11 @@ public:
     auto add(Callable&& f, Args&&... args) -> std::future<std::invoke_result_t<Callable, Args...>>;
 
 private:
-    std::vector<std::thread> m_threads;
+    std::vector<std::thread> m_workers;
     std::queue<std::function<void()>> m_tasks;
     std::mutex m_tasks_mtx;
     std::condition_variable m_cv;
-    bool m_stop;
+    std::atomic_bool m_stop;
 };
 
 #include "ThreadPool.hpp"

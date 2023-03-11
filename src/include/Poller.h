@@ -6,11 +6,10 @@
 #include <sys/event.h>
 #endif
 
-#include <cstdint>
 #include <vector>
 
 #include "Channel.h"
-#include "macros.h"
+#include "common.h"
 
 class Channel;
 class Poller {
@@ -20,10 +19,10 @@ public:
 
     DISALLOW_COPY_AND_MOVE(Poller);
 
-    void update_channel(Channel* channel);
-    void delete_channel(Channel* channel);
+    ReturnCode update_channel(Channel* channel) const;
+    ReturnCode delete_channel(Channel* channel) const;
 
-    std::vector<Channel*> poll(int timeout = -1);
+    [[nodiscard]] std::vector<Channel*> poll(long timeout = -1);
 
 private:
     int m_fd;
