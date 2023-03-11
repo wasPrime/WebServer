@@ -2,13 +2,13 @@
 
 #include <cassert>
 
-#define DISALLOW_COPY(clazz)      \
-    clazz(const clazz&) = delete; \
-    clazz& operator=(const clazz&) = delete
+#define DISALLOW_COPY(clazz)                                               \
+    /* NOLINT(bugprone-macro-parentheses) */ clazz(const clazz&) = delete; \
+    /* NOLINT(bugprone-macro-parentheses) */ clazz& operator=(const clazz&) = delete
 
-#define DISALLOW_MOVE(clazz) \
-    clazz(clazz&&) = delete; \
-    clazz& operator=(clazz&&) = delete
+#define DISALLOW_MOVE(clazz)                                          \
+    /* NOLINT(bugprone-macro-parentheses) */ clazz(clazz&&) = delete; \
+    /* NOLINT(bugprone-macro-parentheses) */ clazz& operator=(clazz&&) = delete
 
 #define DISALLOW_COPY_AND_MOVE(clazz) \
     DISALLOW_COPY(clazz);             \

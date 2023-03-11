@@ -89,8 +89,7 @@ std::vector<Channel*> Poller::poll(long timeout) {
 
 #elif defined(OS_MACOS)
 
-Poller::Poller() {
-    m_fd = kqueue();
+Poller::Poller() : m_fd(kqueue()) {
     assert(m_fd != -1);
 
     m_events.resize(MAX_EVENTS);
@@ -106,7 +105,7 @@ Poller::~Poller() {
 }
 
 ReturnCode Poller::update_channel(Channel* channel) const {
-    std::array<struct kevent, 2> ev;
+    std::array<struct kevent, 2> ev{};
     memset(ev.data(), 9, sizeof(ev));
 
     int n = 0;
@@ -116,10 +115,10 @@ ReturnCode Poller::update_channel(Channel* channel) const {
     }
     int sockfd = channel->get_fd();
     if (channel->get_listen_events() & Channel::READ_EVENT) {
-        EV_SET(&ev[n++], sockfd, EVFILT_READ, op, 0, 0, channel);
+        EV_SET(&ev.at(n++), sockfd, EVFILT_READ, op, 0, 0, channel);
     }
     if (channel->get_listen_events() & Channel::WRITE_EVENT) {
-        EV_SET(&ev[n++], sockfd, EVFILT_WRITE, op, 0, 0, channel);
+        EV_SET(&ev.at(n++), sockfd, EVFILT_WRITE, op, 0, 0, channel);
     }
 
     int res = kevent(m_fd, ev.data(), n, nullptr, 0, nullptr);
@@ -132,14 +131,14 @@ ReturnCode Poller::update_channel(Channel* channel) const {
 }
 
 ReturnCode Poller::delete_channel(Channel* channel) const {
-    std::array<struct kevent, 2> ev;
+    std::array<struct kevent, 2> ev{};
     int n = 0;
     int sockfd = channel->get_fd();
     if (channel->get_listen_events() & Channel::READ_EVENT) {
-        EV_SET(&ev[n++], sockfd, EVFILT_READ, EV_DELETE, 0, 0, channel);
+        EV_SET(&ev.at(n++), sockfd, EVFILT_READ, EV_DELETE, 0, 0, channel);
     }
     if (channel->get_listen_events() & Channel::WRITE_EVENT) {
-        EV_SET(&ev[n++], sockfd, EVFILT_WRITE, EV_DELETE, 0, 0, channel);
+        EV_SET(&ev.at(n++), sockfd, EVFILT_WRITE, EV_DELETE, 0, 0, channel);
     }
 
     int res = kevent(m_fd, ev.data(), n, nullptr, 0, nullptr);
@@ -152,7 +151,7 @@ ReturnCode Poller::delete_channel(Channel* channel) const {
 }
 
 std::vector<Channel*> Poller::poll(long timeout) {
-    timespec ts;
+    timespec ts{};
     memset(&ts, 0, sizeof(ts));
     if (timeout != -1) {
         ts.tv_sec = timeout / 1000;

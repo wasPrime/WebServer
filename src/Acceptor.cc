@@ -29,7 +29,7 @@ void Acceptor::accept_connection() const {
     int client_fd = -1;
     if (m_server_socket->accept(client_fd) != ReturnCode::RC_SUCCESS) {
         perror("Acceptor failed to accept socket");
-        return;  // ReturnCode::RC_ACCEPTOR_ERROR
+        return;  // return ReturnCode::RC_ACCEPTOR_ERROR
     }
 
     // set new connection as non blcoking
@@ -39,7 +39,7 @@ void Acceptor::accept_connection() const {
         m_new_connection_callback(client_fd);
     }
 
-    return;  // ReturnCode::RC_SUCCESS;
+    // return ReturnCode::RC_SUCCESS;
 }
 
 void Acceptor::set_new_connection_callback(const std::function<void(int)>& callback) {

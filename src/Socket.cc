@@ -12,8 +12,7 @@
 
 #include "common.h"
 
-Socket::Socket() : m_fd(-1) {
-}
+Socket::Socket() = default;
 
 Socket::~Socket() {
     if (m_fd != -1) {
@@ -45,7 +44,7 @@ ReturnCode Socket::create() {
 ReturnCode Socket::bind(const char* ip, uint16_t port) const {
     assert(m_fd != -1);
 
-    sockaddr_in addr;
+    sockaddr_in addr{};
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip);
@@ -100,7 +99,7 @@ ReturnCode Socket::accept(int& client_fd) const {
 }
 
 ReturnCode Socket::connect(const char* ip, uint16_t port) const {
-    struct sockaddr_in addr;
+    sockaddr_in addr{};
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip);

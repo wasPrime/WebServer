@@ -11,7 +11,6 @@ inline constexpr int READ_BUFFER = 1024;
 
 Connection::Connection(int fd, EventLoop* loop)
     : m_socket(std::make_unique<Socket>()),
-      m_state(State::Connected),
       m_read_buffer(std::make_unique<Buffer>()),
       m_send_buffer(std::make_unique<Buffer>()) {
     m_socket->set_fd(fd);
@@ -57,7 +56,7 @@ ReturnCode Connection::read() {
 ReturnCode Connection::read_non_blocking() {
     int sockfd = m_socket->get_fd();
 
-    std::array<char, 1024> buf;
+    std::array<char, 1024> buf{};
     while (true) {
         memset(&buf, 0, sizeof(buf));
 

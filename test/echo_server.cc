@@ -9,7 +9,6 @@ int main() {
 
     SignalHandler::register_signal_handler(SIGINT, [] {
         std::cout << "Server exit!" << std::endl;
-        exit(0);
     });
 
     server.on_connect([](Connection* conn) {

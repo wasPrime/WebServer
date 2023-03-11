@@ -17,7 +17,7 @@ public:
 
     void enable_read();
     void enable_write();
-    void enable_ET();
+    void enable_ET();  // NOLINT(readability-identifier-naming)
 
     [[nodiscard]] int get_listen_events() const;
 
@@ -38,9 +38,9 @@ public:
 private:
     int m_fd;
     EventLoop* m_loop;
-    int m_listen_events;
-    int m_ready_events;
-    bool m_exist;
+    int m_listen_events{0};
+    int m_ready_events{0};
+    bool m_exist{false};
 
     std::function<void()> m_read_callback;
     std::function<void()> m_write_callback;

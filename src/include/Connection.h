@@ -53,7 +53,7 @@ private:
     std::unique_ptr<Socket> m_socket;
     std::unique_ptr<Channel> m_channel;
 
-    State m_state;
+    State m_state{State::Connected};
     std::unique_ptr<Buffer> m_read_buffer;
     std::unique_ptr<Buffer> m_send_buffer;
 

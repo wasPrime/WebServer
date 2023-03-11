@@ -2,8 +2,7 @@
 
 #include <utility>
 
-Channel::Channel(int fd, EventLoop* loop)
-    : m_fd(fd), m_loop(loop), m_listen_events(0), m_ready_events(0), m_exist(false) {
+Channel::Channel(int fd, EventLoop* loop) : m_fd(fd), m_loop(loop) {
 }
 
 Channel::~Channel() {

@@ -26,5 +26,5 @@ public:
     [[nodiscard]] bool is_non_blocking() const;
 
 private:
-    int m_fd;
+    int m_fd{-1};
 };
