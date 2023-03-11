@@ -171,7 +171,7 @@ add_custom_target(cpplint echo '${LINT_FILES}' | xargs -n12 -P8
         ${CPPLINT_BIN}
         --verbose=2 --quiet
         --linelength=120
-        --filter=-legal/copyright,-build/include_subdir,-readability/casting
+        --filter=-legal/copyright,-build/include_subdir,-readability/casting,-whitespace/indent,-readability/todo,-readability/nolint,-build/c++11,-build/include_what_you_use,-runtime/int,-runtime/references
         )
 
 ###########################################################

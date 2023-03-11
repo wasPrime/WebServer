@@ -2,14 +2,9 @@
 
 #include "Connection.h"
 #include "Server.h"
-#include "SignalHandler.h"
 
 int main() {
     Server server;
-
-    SignalHandler::register_signal_handler(SIGINT, [] {
-        std::cout << "Server exit!" << std::endl;
-    });
 
     server.on_connect([](Connection* conn) {
         std::cout << "New connection fd: " << conn->get_socket()->get_fd() << std::endl;

@@ -64,7 +64,7 @@ ReturnCode Poller::delete_channel(Channel* channel) const {
 
 std::vector<Channel*> Poller::poll(long timeout) {
     std::vector<Channel*> active_channels;
-    int nfds = epoll_wait(m_fd, m_events.data(), MAX_EVENTS, timeout);
+    int nfds = epoll_wait(m_fd, m_events.data(), m_events.size(), timeout);
     assert(nfds != -1);
 
     for (auto&& event : std::views::take(m_events, nfds)) {
