@@ -10,7 +10,7 @@
 
 class Server {
 public:
-    Server();
+    Server(const char* ip, uint16_t port);
     ~Server();
 
     DISALLOW_COPY_AND_MOVE(Server);

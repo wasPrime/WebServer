@@ -9,7 +9,7 @@
 
 class Acceptor {
 public:
-    explicit Acceptor(EventLoop* loop);
+    explicit Acceptor(EventLoop* loop, const char* ip, uint16_t port);
     ~Acceptor();
 
     DISALLOW_COPY_AND_MOVE(Acceptor);

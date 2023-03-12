@@ -8,7 +8,7 @@
 int main() {
     Socket socket;
     socket.create();
-    socket.connect(LOCAL_HOST, PORT);
+    socket.connect(SERVER_IP, SERVER_PORT);
 
     Connection conn(socket.get_fd(), nullptr);
 

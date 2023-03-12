@@ -5,16 +5,14 @@
 #include <cassert>
 #include <utility>
 
-#include "util.h"
-
 // TODO:
 // Change the way of formatting due to the incompleteness of `std::format`
 // at clang++ 15.0.6 at present
 // #include <format>
 
-Acceptor::Acceptor(EventLoop* loop) : m_server_socket(std::make_unique<Socket>()) {
+Acceptor::Acceptor(EventLoop* loop, const char* ip, uint16_t port) : m_server_socket(std::make_unique<Socket>()) {
     assert(m_server_socket->create() == ReturnCode::RC_SUCCESS);
-    assert(m_server_socket->bind(LOCAL_HOST, PORT) == ReturnCode::RC_SUCCESS);
+    assert(m_server_socket->bind(ip, port) == ReturnCode::RC_SUCCESS);
     assert(m_server_socket->listen() == ReturnCode::RC_SUCCESS);
 
     m_accept_channel = std::make_unique<Channel>(m_server_socket->get_fd(), loop);

@@ -2,9 +2,10 @@
 
 #include "Connection.h"
 #include "Server.h"
+#include "util.h"
 
 int main() {
-    Server server;
+    Server server(SERVER_IP, SERVER_PORT);
 
     server.on_connect([](Connection* conn) {
         std::cout << "New connection fd: " << conn->get_socket()->get_fd() << std::endl;

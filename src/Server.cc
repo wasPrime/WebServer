@@ -2,10 +2,10 @@
 
 #include <cstddef>
 
-Server::Server()
+Server::Server(const char* ip, uint16_t port)
     : m_main_reactor(std::make_unique<EventLoop>()),
       // Notice the init order of m_main_reactor and m_acceptor
-      m_acceptor(std::make_unique<Acceptor>(m_main_reactor.get())),
+      m_acceptor(std::make_unique<Acceptor>(m_main_reactor.get(), ip, port)),
       m_thread_pool(std::make_unique<ThreadPool>()) {
     std::function<void(int)> callback = [this](int fd) {
         this->new_connection(fd);

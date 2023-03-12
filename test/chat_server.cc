@@ -3,11 +3,12 @@
 #include <unordered_map>
 
 #include "Server.h"
+#include "util.h"
 
 int main() {
     std::unordered_map<int, Connection*> clients;
 
-    Server server;
+    Server server(SERVER_IP, SERVER_PORT);
 
     server.on_connect([&](Connection* conn) {
         int client_fd = conn->get_socket()->get_fd();
