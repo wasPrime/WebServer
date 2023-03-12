@@ -12,8 +12,9 @@ ThreadPool::ThreadPool(unsigned int size) {
 
                 {
                     std::unique_lock<std::mutex> lock(this->m_tasks_mtx);
-                    this->m_cv.wait(lock,
-                                    [this] { return this->m_stop || !this->m_tasks.empty(); });
+                    this->m_cv.wait(lock, [this] {
+                        return this->m_stop || !this->m_tasks.empty();
+                    });
                     if (this->m_stop && this->m_tasks.empty()) {
                         return;
                     }

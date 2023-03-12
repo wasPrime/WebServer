@@ -158,8 +158,7 @@ std::vector<Channel*> Poller::poll(long timeout) {
         ts.tv_nsec = (timeout % 1000) * 1000 * 1000;
     }
 
-    int nfds =
-        kevent(m_fd, nullptr, 0, m_events.data(), MAX_EVENTS, (timeout != -1 ? &ts : nullptr));
+    int nfds = kevent(m_fd, nullptr, 0, m_events.data(), MAX_EVENTS, (timeout != -1 ? &ts : nullptr));
     std::vector<Channel*> active_channels;
     active_channels.reserve(nfds);
     for (int i = 0; i < nfds; ++i) {

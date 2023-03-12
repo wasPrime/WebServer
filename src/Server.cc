@@ -7,7 +7,9 @@ Server::Server()
       // Notice the init order of m_main_reactor and m_acceptor
       m_acceptor(std::make_unique<Acceptor>(m_main_reactor.get())),
       m_thread_pool(std::make_unique<ThreadPool>()) {
-    std::function<void(int)> callback = [this](int fd) { this->new_connection(fd); };
+    std::function<void(int)> callback = [this](int fd) {
+        this->new_connection(fd);
+    };
     m_acceptor->set_new_connection_callback(callback);
 
     unsigned int size = std::thread::hardware_concurrency();
@@ -22,7 +24,9 @@ Server::~Server() = default;
 
 void Server::start() {
     for (size_t i = 0; i < m_sub_reactors.size(); ++i) {
-        std::function<void()> sub_loop = [this, i] { this->m_sub_reactors[i]->loop(); };
+        std::function<void()> sub_loop = [this, i] {
+            this->m_sub_reactors[i]->loop();
+        };
         m_thread_pool->add(sub_loop);
     }
 

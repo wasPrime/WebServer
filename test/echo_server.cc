@@ -11,8 +11,8 @@ int main() {
     });
 
     server.on_message([](Connection* conn) {
-        std::cout << "Message from client " << conn->get_socket()->get_fd() << ": "
-                  << conn->get_read_buffer() << std::endl;
+        std::cout << "Message from client " << conn->get_socket()->get_fd() << ": " << conn->get_read_buffer()
+                  << std::endl;
 
         conn->send(conn->get_read_buffer());
     });

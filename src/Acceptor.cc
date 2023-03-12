@@ -18,7 +18,9 @@ Acceptor::Acceptor(EventLoop* loop) : m_server_socket(std::make_unique<Socket>()
     assert(m_server_socket->listen() == ReturnCode::RC_SUCCESS);
 
     m_accept_channel = std::make_unique<Channel>(m_server_socket->get_fd(), loop);
-    std::function<void()> callback = [this] { this->accept_connection(); };
+    std::function<void()> callback = [this] {
+        this->accept_connection();
+    };
     m_accept_channel->set_read_callback(callback);
     m_accept_channel->enable_read();
 }

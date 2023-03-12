@@ -14,7 +14,9 @@ int main() {
     unsigned int size = std::thread::hardware_concurrency();
     ThreadPool thread_pool(size);
 
-    std::function<void()> func = [] { print(1, 3.14, "hello", std::string("world")); };
+    std::function<void()> func = [] {
+        print(1, 3.14, "hello", std::string("world"));
+    };
     thread_pool.add(func);
 
     func = test;

@@ -30,7 +30,9 @@ void Connection::set_delete_connection_callback(const std::function<void(int)>& 
 
 void Connection::set_on_message_callback(const std::function<void(Connection*)>& callback) {
     m_on_message_callback = callback;
-    m_channel->set_read_callback([this] { this->business(); });
+    m_channel->set_read_callback([this] {
+        this->business();
+    });
 }
 
 void Connection::business() {
@@ -140,8 +142,7 @@ ReturnCode Connection::write_non_blocking() {
 
     std::size_t already_send_size = 0;
     while (already_send_size < total_size) {
-        ssize_t write_bytes =
-            ::write(sockfd, buf + already_send_size, total_size - already_send_size);
+        ssize_t write_bytes = ::write(sockfd, buf + already_send_size, total_size - already_send_size);
         if (write_bytes == -1) {
             if (errno == EINTR) {
                 printf("continue writing\n");

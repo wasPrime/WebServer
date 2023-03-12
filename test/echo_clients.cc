@@ -10,8 +10,7 @@
 
 class ExecuteGroup {
 public:
-    explicit ExecuteGroup(int thread_count, int msg_count)
-        : m_thread_count(thread_count), m_msg_count(msg_count) {
+    explicit ExecuteGroup(int thread_count, int msg_count) : m_thread_count(thread_count), m_msg_count(msg_count) {
     }
 
     void run() {
@@ -22,7 +21,9 @@ public:
                 std::cout << "add event[" << i << "] to thread pool" << std::endl;
             }
 
-            thread_pool.add([this, i] { single_client(i, m_msg_count); });
+            thread_pool.add([this, i] {
+                single_client(i, m_msg_count);
+            });
         }
     }
 
@@ -44,8 +45,8 @@ private:
             conn.read();
             {
                 std::lock_guard<std::mutex> lock(m_print_mtx);
-                std::cout << "[client_id: " << client_id << "][msg_id: " << i
-                          << "] msg: " << conn.get_read_buffer() << std::endl;
+                std::cout << "[client_id: " << client_id << "][msg_id: " << i << "] msg: " << conn.get_read_buffer()
+                          << std::endl;
             }
         }
     }
